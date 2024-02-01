@@ -11,7 +11,7 @@ import java.util.Optional;
 
 @Service
 public class CourseService {
-    CourseDao courseDao;
+    private final CourseDao courseDao;
 
     @Autowired
     public CourseService(CourseDao courseDao) {

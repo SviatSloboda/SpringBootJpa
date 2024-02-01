@@ -12,7 +12,7 @@ import java.util.Optional;
 
 @Service
 public class GroupService {
-    GroupDao groupDao;
+    private final GroupDao groupDao;
 
     @Autowired
     public GroupService(GroupDao groupDao) {
