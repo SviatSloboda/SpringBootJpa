@@ -2,7 +2,8 @@ package ua.foxminded.springbootjdbcapi.dao.implementation;
 
 import org.springframework.dao.DataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
-import ua.foxminded.springbootjdbcapi.dao.GroupDAO;
+import org.springframework.stereotype.Repository;
+import ua.foxminded.springbootjdbcapi.dao.GroupDao;
 import ua.foxminded.springbootjdbcapi.dao.implementation.rowmapper.GroupRowMapper;
 import ua.foxminded.springbootjdbcapi.model.Group;
 
@@ -10,7 +11,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
-public class GroupDaoImpl implements GroupDAO {
+@Repository
+public class GroupDaoImpl implements GroupDao {
     private final JdbcTemplate jdbcTemplate;
     private final GroupRowMapper groupRowMapper = new GroupRowMapper();
 
@@ -30,6 +32,21 @@ public class GroupDaoImpl implements GroupDAO {
 
         try {
             return jdbcTemplate.update(sqlQuery, id, id);
+        } catch (DataAccessException e) {
+            return 0;
+        }
+    }
+
+    public int deleteAll() {
+        String sqlQuery = """
+                ALTER SEQUENCE groups_group_id_seq RESTART WITH 1;
+                UPDATE public.students
+                SET group_id = null;
+                DELETE FROM public.groups;
+                """;
+
+        try {
+            return jdbcTemplate.update(sqlQuery);
         } catch (DataAccessException e) {
             return 0;
         }
@@ -106,6 +123,17 @@ public class GroupDaoImpl implements GroupDAO {
             return jdbcTemplate.update(sql, object.groupName());
         } catch (DataAccessException e) {
             return 0;
+        }
+    }
+
+    @Override
+    public boolean existsById(int id) {
+        String sql = "SELECT COUNT(*) FROM public.groups WHERE group_id = ?";
+
+        try {
+            return jdbcTemplate.queryForObject(sql, Integer.class, id) > 0;
+        } catch (DataAccessException e){
+            return false;
         }
     }
 

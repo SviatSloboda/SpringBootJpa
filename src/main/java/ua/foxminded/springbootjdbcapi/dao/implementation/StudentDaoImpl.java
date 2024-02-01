@@ -2,7 +2,8 @@ package ua.foxminded.springbootjdbcapi.dao.implementation;
 
 import org.springframework.dao.DataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
-import ua.foxminded.springbootjdbcapi.dao.StudentDAO;
+import org.springframework.stereotype.Repository;
+import ua.foxminded.springbootjdbcapi.dao.StudentDao;
 import ua.foxminded.springbootjdbcapi.dao.implementation.rowmapper.StudentRowMapper;
 import ua.foxminded.springbootjdbcapi.model.Student;
 
@@ -10,7 +11,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
-public class StudentDaoImpl implements StudentDAO {
+@Repository
+public class StudentDaoImpl implements StudentDao {
     private final JdbcTemplate jdbcTemplate;
     private final StudentRowMapper studentRowMapper = new StudentRowMapper();
 
@@ -29,6 +31,19 @@ public class StudentDaoImpl implements StudentDAO {
 
         try {
             return jdbcTemplate.update(sqlQuery, id, id);
+        } catch (DataAccessException e) {
+            return 0;
+        }
+    }
+
+    public int deleteAll() {
+        String sqlQuery = """
+                ALTER SEQUENCE students_student_id_seq RESTART WITH 1;
+                DELETE student_id FROM public.student_courses;
+                DELETE FROM public.students;
+                """;
+        try {
+            return jdbcTemplate.update(sqlQuery);
         } catch (DataAccessException e) {
             return 0;
         }
@@ -112,6 +127,17 @@ public class StudentDaoImpl implements StudentDAO {
             return jdbcTemplate.update(sql, object.groupId(), object.firstName(), object.lastName());
         } catch (DataAccessException e) {
             return 0;
+        }
+    }
+
+    @Override
+    public boolean existsById(int id) {
+        String sql = "SELECT COUNT(*) FROM public.students WHERE student_id = ?";
+
+        try {
+            return jdbcTemplate.queryForObject(sql, Integer.class, id) > 0;
+        } catch (DataAccessException e){
+            return false;
         }
     }
 

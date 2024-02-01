@@ -28,7 +28,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 @Sql(scripts = {"/sql/create_tables.sql"})
 @Sql(scripts = {"/sql/insert_data.sql"})
 @ActiveProfiles("test")
-
 @Testcontainers
 class StudentDaoImplTest {
     @Autowired
