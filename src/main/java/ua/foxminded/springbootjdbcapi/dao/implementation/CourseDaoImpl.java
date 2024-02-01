@@ -3,7 +3,7 @@ package ua.foxminded.springbootjdbcapi.dao.implementation;
 import org.springframework.dao.DataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
-import ua.foxminded.springbootjdbcapi.dao.CourseDAO;
+import ua.foxminded.springbootjdbcapi.dao.CourseDao;
 import ua.foxminded.springbootjdbcapi.dao.implementation.rowmapper.CourseRowMapper;
 import ua.foxminded.springbootjdbcapi.model.Course;
 
@@ -12,7 +12,7 @@ import java.util.List;
 import java.util.Optional;
 
 @Repository
-public class CourseDaoImpl implements CourseDAO {
+public class CourseDaoImpl implements CourseDao {
     private final JdbcTemplate jdbcTemplate;
     private final CourseRowMapper courseRowMapper = new CourseRowMapper();
 
@@ -31,6 +31,20 @@ public class CourseDaoImpl implements CourseDAO {
 
         try {
             return jdbcTemplate.update(sql, id, id);
+        } catch (DataAccessException e) {
+            return 0;
+        }
+    }
+
+    public int deleteAll() {
+        String sql = """
+                   ALTER SEQUENCE courses_course_id_seq RESTART WITH 1;
+                   DELETE course_id  FROM public.student_courses;
+                   DELETE FROM public.courses;
+                """;
+
+        try {
+            return jdbcTemplate.update(sql);
         } catch (DataAccessException e) {
             return 0;
         }
@@ -106,6 +120,16 @@ public class CourseDaoImpl implements CourseDAO {
             return jdbcTemplate.update(sql, object.name(), object.description());
         } catch (DataAccessException e) {
             return 0;
+        }
+    }
+
+    @Override
+    public boolean existsById(int id) {
+        String sql = "SELECT COUNT(*) FROM public.courses WHERE course_id = ?";
+        try {
+            return jdbcTemplate.queryForObject(sql, Integer.class, id) > 0;
+        } catch (DataAccessException e){
+            return false;
         }
     }
 }

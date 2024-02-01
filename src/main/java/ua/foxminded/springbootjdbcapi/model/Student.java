@@ -1,6 +1,5 @@
 package ua.foxminded.springbootjdbcapi.model;
 
-
 public record Student(
         int id,
         int groupId,
