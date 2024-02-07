@@ -68,7 +68,6 @@ public class GenerateService {
                 throw new IllegalStateException("Group with name: " + groupName + " was not created");
             }
         }
-        System.out.println(groupDao.getAll().stream().map(Group::id).collect(Collectors.toList()));
     }
 
     public void generateCourses() {

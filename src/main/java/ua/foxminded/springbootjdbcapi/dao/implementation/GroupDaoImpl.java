@@ -144,7 +144,7 @@ public class GroupDaoImpl implements GroupDao {
                 FROM public.groups
                 LEFT JOIN public.students on students.group_id = groups.group_id
                 GROUP BY groups.group_id
-                HAVING COUNT(students.student_id) < ?;
+                HAVING COUNT(students.student_id) <= ?;
                 """;
 
         try {

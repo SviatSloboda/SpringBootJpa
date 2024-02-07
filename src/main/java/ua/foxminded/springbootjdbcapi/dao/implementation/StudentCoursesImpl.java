@@ -1,8 +1,10 @@
 package ua.foxminded.springbootjdbcapi.dao.implementation;
 
+import org.flywaydb.core.internal.util.JsonUtils;
 import org.springframework.dao.DataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 import ua.foxminded.springbootjdbcapi.dao.StudentCourses;
 
 @Repository
@@ -13,15 +15,25 @@ public class StudentCoursesImpl implements StudentCourses {
         this.jdbcTemplate = jdbcTemplate;
     }
 
-    public int deleteAll(){
-        String sql = """
-                DELETE FROM public.student_courses;
-                """;
-        try {
-            return jdbcTemplate.update(sql);
-        } catch (DataAccessException e){
-            return 0;
+    @Override
+    public int deleteAll() {
+        int result = 0;
+
+        result += jdbcTemplate.update("DELETE FROM public.student_courses");
+
+        result += jdbcTemplate.update("UPDATE public.students SET group_id = null");
+
+        result += jdbcTemplate.update("DELETE FROM public.students");
+        result += jdbcTemplate.update("DELETE FROM public.groups");
+        result += jdbcTemplate.update("DELETE FROM public.courses");
+
+        if (result > 0) {
+            jdbcTemplate.execute("ALTER SEQUENCE students_student_id_seq RESTART WITH 1");
+            jdbcTemplate.execute("ALTER SEQUENCE groups_group_id_seq RESTART WITH 1");
+            jdbcTemplate.execute("ALTER SEQUENCE courses_course_id_seq RESTART WITH 1");
         }
+
+        return result;
     }
 
     @Override
@@ -34,6 +46,7 @@ public class StudentCoursesImpl implements StudentCourses {
         try {
             return jdbcTemplate.update(sql, studentId, courseId);
         } catch (DataAccessException e) {
+            System.out.println("Error adding student to course " + e);
             return 0;
         }
     }
