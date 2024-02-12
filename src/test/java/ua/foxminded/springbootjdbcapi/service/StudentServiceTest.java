@@ -7,12 +7,10 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import ua.foxminded.springbootjdbcapi.dao.CourseDao;
 import ua.foxminded.springbootjdbcapi.dao.StudentDao;
 import ua.foxminded.springbootjdbcapi.model.Course;
+import ua.foxminded.springbootjdbcapi.model.Group;
 import ua.foxminded.springbootjdbcapi.model.Student;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.NoSuchElementException;
-import java.util.Optional;
+import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -29,39 +27,16 @@ public class StudentServiceTest {
 
     @Autowired
     StudentService studentService;
+    private final Student student = new Student("1", new Group("1", "test"), "John", "Doe");
+    private final Course course = new Course("1", "test", "test");
 
     @Test
-    void shouldCreateNewStudentWithoutId() {
+    void save() {
         // Arrange
-        Student student = new Student(1,"John", "Doe");
-        when(studentDao.saveWithoutId(any(Student.class))).thenReturn(1);
+        when(studentDao.save(student)).thenReturn(true);
 
         // Act
-        boolean result = studentService.createStudentWithoutId(student);
-
-        // Assert
-        assertTrue(result);
-        verify(studentDao).saveWithoutId(any(Student.class));
-    }
-
-    @Test
-    void shouldThrowIllegalStateExceptionWhenNewStudentWithoutIdWasNotCreated() {
-        // Arrange
-        Student student = new Student(1,"John", "Doe");
-        when(studentDao.saveWithoutId(student)).thenReturn(0);
-
-        // Act & Assert
-        assertThrows(IllegalStateException.class, () -> studentService.createStudentWithoutId(student));
-    }
-
-    @Test
-    void createStudent() {
-        // Arrange
-        Student student = new Student(1,1, "John", "Doe");
-        when(studentDao.save(student)).thenReturn(1);
-
-        // Act
-        boolean result = studentService.createStudent(student);
+        boolean result = studentService.save(student);
 
         // Assert
         assertTrue(result);
@@ -71,22 +46,21 @@ public class StudentServiceTest {
     @Test
     void shouldThrowIllegalStateExceptionWhenNewStudentWasNotCreated() {
         // Arrange
-        Student student = new Student(1,1, "John", "Doe");
-        when(studentDao.save(student)).thenReturn(0);
+        when(studentDao.save(student)).thenReturn(false);
 
         // Act & Assert
-        assertThrows(IllegalStateException.class, () -> studentService.createStudent(student));
+        assertThrows(IllegalStateException.class, () -> studentService.save(student));
     }
 
     @Test
     void shouldDeleteStudentById() {
         // Arrange
-        int id = 1;
+        String id = "1";
         when(studentDao.existsById(id)).thenReturn(true);
-        when(studentDao.deleteById(id)).thenReturn(1);
+        when(studentDao.deleteById(id)).thenReturn(true);
 
         // Act
-        boolean result = studentService.deleteStudentById(id);
+        boolean result = studentService.deleteById(id);
 
         // Assert
         assertTrue(result);
@@ -96,7 +70,7 @@ public class StudentServiceTest {
     @Test
     void shouldDeleteAllStudents() {
         // Arrange
-        when(studentDao.deleteAll()).thenReturn(10);
+        when(studentDao.deleteAll()).thenReturn(true);
 
         // Act
         boolean result = studentService.deleteAll();
@@ -109,7 +83,7 @@ public class StudentServiceTest {
     @Test
     void shouldThrowIllegalStateException_whenAllStudentsWereNotDeleted() {
         // Arrange
-        when(studentDao.deleteAll()).thenReturn(0);
+        when(studentDao.deleteAll()).thenReturn(false);
 
         // Act
         assertThrows(IllegalStateException.class,
@@ -120,33 +94,32 @@ public class StudentServiceTest {
     @Test
     void shouldThrowNoSuchElementExceptionWhenStudentNotExistsByDeleting() {
         // Arrange
-        int id = 1;
+        String id = "1";
         when(studentDao.existsById(id)).thenReturn(false);
 
         // Act & Assert
-        assertThrows(NoSuchElementException.class, () -> studentService.deleteStudentById(id));
+        assertThrows(NoSuchElementException.class, () -> studentService.deleteById(id));
     }
 
     @Test
     void shouldThrowIllegalStateExceptionWhenStudentWasNotDeleted() {
         // Arrange
-        int id = 1;
+        String id = "1";
         when(studentDao.existsById(id)).thenReturn(true);
-        when(studentDao.deleteById(id)).thenReturn(0);
+        when(studentDao.deleteById(id)).thenReturn(false);
 
         // Act & Assert
-        assertThrows(IllegalStateException.class, () -> studentService.deleteStudentById(id));
+        assertThrows(IllegalStateException.class, () -> studentService.deleteById(id));
     }
 
     @Test
-    void updateStudent() {
+    void update() {
         // Arrange
-        Student student = new Student(1, "John", "Doe");
-        when(studentDao.existsById(student.id())).thenReturn(true);
-        when(studentDao.update(student)).thenReturn(1);
+        when(studentDao.existsById(student.getId())).thenReturn(true);
+        when(studentDao.update(student)).thenReturn(true);
 
         // Act
-        boolean result = studentService.updateStudent(student);
+        boolean result = studentService.update(student);
 
         // Assert
         assertTrue(result);
@@ -156,32 +129,30 @@ public class StudentServiceTest {
     @Test
     void shouldThrowNoSuchElementExceptionWhenStudentNotExistsByUpdating() {
         // Arrange
-        Student student = new Student(1, "John", "Doe");
-        when(studentDao.existsById(student.id())).thenReturn(false);
+        when(studentDao.existsById(student.getId())).thenReturn(false);
 
         // Act & Assert
-        assertThrows(NoSuchElementException.class, () -> studentService.updateStudent(student));
+        assertThrows(NoSuchElementException.class, () -> studentService.update(student));
     }
 
     @Test
     void shouldThrowIllegalStateExceptionWhenStudentWasNotUpdated() {
         // Arrange
-        Student student = new Student(1, "John", "Doe");
-        when(studentDao.existsById(student.id())).thenReturn(true);
-        when(studentDao.update(student)).thenReturn(0);
+        when(studentDao.existsById(student.getId())).thenReturn(true);
+        when(studentDao.update(student)).thenReturn(false);
 
         // Act & Assert
-        assertThrows(IllegalStateException.class, () -> studentService.updateStudent(student));
+        assertThrows(IllegalStateException.class, () -> studentService.update(student));
     }
 
     @Test
     void shouldBeTrueWhenStudentExistsById() {
         // Arrange
-        int id = 1;
+        String id = "1";
         when(studentDao.existsById(id)).thenReturn(true);
 
         // Act
-        boolean result = studentService.studentExistsById(id);
+        boolean result = studentService.existsById(id);
 
         // Assert
         assertTrue(result);
@@ -191,11 +162,11 @@ public class StudentServiceTest {
     @Test
     void shouldBeFalseWhenStudentExistsById() {
         // Arrange
-        int id = 1;
+        String id = "1";
         when(studentDao.existsById(id)).thenReturn(false);
 
         // Act
-        boolean result = studentService.studentExistsById(id);
+        boolean result = studentService.existsById(id);
 
         // Assert
         assertFalse(result);
@@ -205,11 +176,11 @@ public class StudentServiceTest {
     @Test
     void shouldGetAllStudents() {
         // Arrange
-        List<Student> expected = new ArrayList<>(List.of(new Student(1, "John", "Doe")));
+        List<Student> expected = new ArrayList<>(List.of(new Student("1", new Group("1", "test"), "John", "Doe")));
         when(studentDao.getAll()).thenReturn(expected);
 
         // Act
-        List<Student> actual = studentService.getAllStudents();
+        List<Student> actual = studentService.getAll();
 
         // Assert
         assertEquals(expected, actual);
@@ -222,18 +193,18 @@ public class StudentServiceTest {
         when(studentDao.getAll()).thenReturn(new ArrayList<>());
 
         // Act & Assert
-        assertThrows(NoSuchElementException.class, () -> studentService.getAllStudents());
+        assertThrows(NoSuchElementException.class, () -> studentService.getAll());
     }
 
     @Test
     void shouldGetStudentById() {
         // Arrange
-        int id = 1;
-        Optional<Student> expected = Optional.of(new Student(id, "John", "Doe"));
+        String id = "1";
+        Optional<Student> expected = Optional.of(new Student("1", new Group("1", "test"), "John", "Doe"));
         when(studentDao.getById(id)).thenReturn(expected);
 
         // Act
-        Student actual = studentService.getStudentById(id);
+        Student actual = studentService.getById(id);
 
         // Assert
         assertEquals(expected.get(), actual);
@@ -243,27 +214,25 @@ public class StudentServiceTest {
     @Test
     void shouldThrowNoSuchElementExceptionWhenNoStudentWasReturned() {
         // Arrange
-        int id = 1;
+        String id = "1";
         when(studentDao.getById(id)).thenReturn(Optional.empty());
 
         // Act & Assert
-        assertThrows(NoSuchElementException.class, () -> studentService.getStudentById(id));
+        assertThrows(NoSuchElementException.class, () -> studentService.getById(id));
     }
 
     @Test
     void shouldFindAllStudentsByCourseName() {
         // Arrange
-        Course course = new Course(1, "test", "test");
-
         List<Student> expected = new ArrayList<>(
-                List.of(new Student(1, 1, "test", "test"))
+                List.of(new Student("1", new Group("1", "test"), "John", "Doe"))
         );
 
         // Act
-        when(studentDao.findAllStudentsByCourseName(course.name())).thenReturn(expected);
+        when(studentDao.findAllStudentsByCourseName(course.getName())).thenReturn(expected);
         when(courseDao.getAll()).thenReturn(List.of(course));
 
-        List<Student> actual = studentService.findAllStudentsByCourseName(course.name());
+        List<Student> actual = studentService.findAllStudentsByCourseName(course.getName());
 
         // Assert
         assertEquals(expected, actual);
@@ -271,20 +240,14 @@ public class StudentServiceTest {
     }
 
     @Test
-    void shouldThrowNoSuchElementException_whenCourseNotExistsByFindAllStudentsByCourseName() {
+    void shouldThrowNoSuchElementException_whenNoStudentsFoundForCourseName() {
         // Arrange
-        Course course = new Course(1, "test", "test");
-
-        List<Student> expected = new ArrayList<>(
-                List.of(new Student(1, 1, "test", "test"))
-        );
-
-        when(studentDao.findAllStudentsByCourseName(course.name())).thenReturn(expected);
-        when(courseDao.getAll()).thenReturn(new ArrayList<>());
+        String nonExistentCourseName = "Nonexistent Course";
+        when(studentDao.findAllStudentsByCourseName(nonExistentCourseName)).thenReturn(Collections.emptyList());
 
         // Act & Assert
-        assertThrows(NoSuchElementException.class,
-                () -> studentService.findAllStudentsByCourseName(course.name()),
-                "No students were found!");
+        assertThrows(NoSuchElementException.class, () -> {
+            studentService.findAllStudentsByCourseName(nonExistentCourseName);
+        });
     }
 }

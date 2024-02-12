@@ -22,17 +22,7 @@ public class SchoolService {
         this.courseDao = courseDao;
     }
 
-    public boolean deleteAll(){
-        int result = studentCourses.deleteAll();
-
-        if(result <= 0){
-            throw new IllegalStateException("Students and Courses were not unpaired");
-        }
-
-        return true;
-    }
-
-    public boolean addStudentToCourse(int studentId, int courseId) {
+    public boolean addStudentToCourse(String studentId, String courseId) {
         if (!studentDao.existsById(studentId)) {
             throw new NoSuchElementException("Student with ID " + studentId + " does not exist.");
         }
@@ -42,20 +32,18 @@ public class SchoolService {
         }
 
         if (studentCourses.studentEnrolledOnCourse(studentId, courseId)) {
-            throw new IllegalArgumentException("Student with ID " + studentId +
-                                               " is already enrolled in course with ID " + courseId + ".");
+            throw new IllegalArgumentException("Student with ID " + studentId + " is already enrolled in course with ID " + courseId + ".");
         }
 
-        int result = studentCourses.addStudentToCourse(studentId, courseId);
-        if (result <= 0) {
-            throw new IllegalStateException("Failed to enroll student with ID " + studentId +
-                                            " in course with ID " + courseId + ".");
+        boolean wasAdded = studentCourses.addStudentToCourse(studentId, courseId);
+        if (!wasAdded) {
+            throw new IllegalStateException("Failed to enroll student with ID " + studentId + " in course with ID " + courseId + ".");
         }
 
         return true;
     }
 
-    public boolean removeStudentFromCourse(int studentId, int courseId) {
+    public boolean removeStudentFromCourse(String studentId, String courseId) {
         if (!studentDao.existsById(studentId)) {
             throw new NoSuchElementException("Student with ID " + studentId + " does not exist.");
         }
@@ -65,20 +53,18 @@ public class SchoolService {
         }
 
         if (!studentCourses.studentEnrolledOnCourse(studentId, courseId)) {
-            throw new IllegalArgumentException("Student with ID " + studentId +
-                                               " is not enrolled in course with ID " + courseId + ".");
+            throw new IllegalArgumentException("Student with ID " + studentId + " is not enrolled in course with ID " + courseId + ".");
         }
 
-        int result = studentCourses.removeStudentFromCourse(studentId, courseId);
-        if (result <= 0) {
-            throw new IllegalStateException("Failed to delete student with ID " + studentId +
-                                            " from course with ID " + courseId + ".");
+        boolean wasRemoved = studentCourses.removeStudentFromCourse(studentId, courseId);
+        if (!wasRemoved) {
+            throw new IllegalStateException("Failed to delete student with ID " + studentId + " from course with ID " + courseId + ".");
         }
 
         return true;
     }
 
-    public boolean studentEnrolledOnCourse(int studentId, int courseId){
+    public boolean studentEnrolledOnCourse(String studentId, String courseId) {
         if (!studentDao.existsById(studentId)) {
             throw new NoSuchElementException("Student with ID " + studentId + " does not exist.");
         }
@@ -88,5 +74,15 @@ public class SchoolService {
         }
 
         return studentCourses.studentEnrolledOnCourse(studentId, courseId);
+    }
+
+    public boolean deleteAll() {
+        boolean wereDeleted = studentCourses.deleteAll();
+
+        if (!wereDeleted) {
+            throw new IllegalStateException("Students and Courses were not unpaired");
+        }
+
+        return true;
     }
 }

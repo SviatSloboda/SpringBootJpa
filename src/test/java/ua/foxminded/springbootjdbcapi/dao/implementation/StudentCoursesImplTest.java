@@ -1,38 +1,43 @@
 package ua.foxminded.springbootjdbcapi.dao.implementation;
 
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.jdbc.JdbcTest;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
-import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.DynamicPropertyRegistry;
-import org.springframework.test.context.DynamicPropertySource;
+import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
+import org.springframework.context.annotation.ComponentScan;
+import org.springframework.context.annotation.FilterType;
 import org.springframework.test.context.jdbc.Sql;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
+import ua.foxminded.springbootjdbcapi.dao.StudentCourses;
+import ua.foxminded.springbootjdbcapi.dao.StudentDao;
 import ua.foxminded.springbootjdbcapi.model.Student;
 
+import java.util.List;
 import java.util.NoSuchElementException;
-import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 
-@JdbcTest
+
+@DataJpaTest(includeFilters = @ComponentScan.Filter(type = FilterType.ASSIGNABLE_TYPE, classes = {
+        StudentCourses.class, StudentDao.class
+}))
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
-@Sql(scripts = {"/sql/drop_tables.sql"})
-@Sql(scripts = {"/sql/create_tables.sql"})
-@Sql(scripts = {"/sql/insert_data.sql"})
-@ActiveProfiles("test")
-
+@Sql(
+        scripts = {"/sql/drop_tables.sql", "/sql/create_tables.sql", "/sql/insert_data.sql"},
+        executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD
+)
 @Testcontainers
 class StudentCoursesImplTest {
+
     @Autowired
-    private JdbcTemplate jdbcTemplate;
-    private StudentCoursesImpl studentCourses;
-    private StudentDaoImpl studentDao;
+    private StudentCourses studentCourses;
+
+    @Autowired
+    StudentDao studentDao;
 
     @Container
     private static final PostgreSQLContainer<?> postgresContainer = new PostgreSQLContainer<>("postgres:latest")
@@ -40,42 +45,30 @@ class StudentCoursesImplTest {
             .withUsername("test")
             .withPassword("test");
 
-    @DynamicPropertySource
-    static void postgresProperties(DynamicPropertyRegistry registry) {
-        registry.add("spring.datasource.url", postgresContainer::getJdbcUrl);
-        registry.add("spring.datasource.username", postgresContainer::getUsername);
-        registry.add("spring.datasource.password", postgresContainer::getPassword);
-    }
-
-    @BeforeEach
-    void setUp() {
-        studentCourses = new StudentCoursesImpl(jdbcTemplate);
-        studentDao = new StudentDaoImpl(jdbcTemplate);
-    }
 
     @Test
-    void addStudentToCourse_GivenStudent4AndCourse1_WhenAdded_ThenRowsAffectedIs1() {
+    void enrollStudentToCourse_GivenStudent4AndCourse1_WhenAdded_ThenRowsAffectedIs1() {
         // Given
-        int studentId = 4;
-        int courseId = 1;
+        String studentId = "4";
+        String courseId = "1";
 
         // When
-        int rowsAffected = studentCourses.addStudentToCourse(studentId, courseId);
+        boolean wasAdded = studentCourses.addStudentToCourse(studentId, courseId);
 
         // Then
-        assertEquals(1, rowsAffected);
+        assertTrue(wasAdded);
     }
 
     @Test
-    void addStudentToCourse_GivenStudent4AndCourse1_WhenAdded_ThenStudentShouldBeSeenInCourse() {
+    void enrollStudentToCourse_GivenStudent4AndCourse1_WhenAdded_ThenStudentShouldBeSeenInCourse() {
         // Given
-        int studentId = 4;
-        int courseId = 1;
+        String studentId = "4";
+        String courseId = "1";
         studentCourses.addStudentToCourse(studentId, courseId);
 
         // When
         Student actual = studentDao.findAllStudentsByCourseName("Math").stream()
-                .filter(student -> student.id() == studentId)
+                .filter(student -> student.getId().equals(studentId))
                 .findFirst().orElseThrow(() -> new NoSuchElementException("No student found"));
 
         // Then
@@ -83,31 +76,34 @@ class StudentCoursesImplTest {
     }
 
     @Test
-    void removeStudentFromCourse_GivenStudent2AndCourse1_WhenRemoved_ThenRowsAffectedIs1() {
+    void withdrawStudentFromCourse_GivenStudent2AndCourse1_WhenRemoved_ThenRowsAffectedIs1() {
         // Given
-        int studentId = 2;
-        int courseId = 1;
+        String studentId = "2";
+        String courseId = "1";
 
         // When
-        int rowsAffected = studentCourses.removeStudentFromCourse(studentId, courseId);
+        boolean wasRemoved = studentCourses.removeStudentFromCourse(studentId, courseId);
 
         // Then
-        assertEquals(1, rowsAffected);
+        assertTrue(wasRemoved);
     }
 
     @Test
-    void removeStudentFromCourse_GivenStudent2AndCourse1_WhenRemoved_ThenStudentNotInCourseList() {
+    void withdrawStudentFromCourse_GivenStudent2AndCourse1_WhenRemoved_ThenStudentNotInCourseList() {
         // Given
-        int studentId = 2;
-        int courseId = 1;
-        studentCourses.addStudentToCourse(studentId, courseId);
+        String studentId = "2";
+        String courseId = "1";
 
         // When
-        Optional<Student> actual = studentDao.findAllStudentsByCourseName("Math").stream()
-                .filter(student -> student.id() == studentId)
-                .findFirst();
+        boolean wasRemoved = studentCourses.removeStudentFromCourse(studentId, courseId);
 
         // Then
-        assertEquals(studentDao.getById(studentId), Optional.empty());
+        List<Student> studentsInMathCourse = studentDao.findAllStudentsByCourseName("Math");
+        boolean studentExistsInCourse = studentsInMathCourse.stream()
+                .anyMatch(student -> student.getId().equals(studentId));
+
+        assertTrue(wasRemoved);
+        assertFalse(studentExistsInCourse, "Student should not be in the Math course list after removal.");
     }
+
 }

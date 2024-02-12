@@ -1,80 +1,75 @@
 package ua.foxminded.springbootjdbcapi.dao.implementation;
 
-import org.flywaydb.core.internal.util.JsonUtils;
-import org.springframework.dao.DataAccessException;
-import org.springframework.jdbc.core.JdbcTemplate;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
+import jakarta.persistence.PersistenceException;
+import jakarta.transaction.Transactional;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
-import org.springframework.transaction.annotation.Transactional;
 import ua.foxminded.springbootjdbcapi.dao.StudentCourses;
+import ua.foxminded.springbootjdbcapi.model.Course;
+import ua.foxminded.springbootjdbcapi.model.Student;
 
 @Repository
+@RequiredArgsConstructor
 public class StudentCoursesImpl implements StudentCourses {
-    private final JdbcTemplate jdbcTemplate;
-
-    public StudentCoursesImpl(JdbcTemplate jdbcTemplate) {
-        this.jdbcTemplate = jdbcTemplate;
-    }
+    @PersistenceContext
+    private EntityManager em;
 
     @Override
-    public int deleteAll() {
-        int result = 0;
-
-        result += jdbcTemplate.update("DELETE FROM public.student_courses");
-
-        result += jdbcTemplate.update("UPDATE public.students SET group_id = null");
-
-        result += jdbcTemplate.update("DELETE FROM public.students");
-        result += jdbcTemplate.update("DELETE FROM public.groups");
-        result += jdbcTemplate.update("DELETE FROM public.courses");
-
-        if (result > 0) {
-            jdbcTemplate.execute("ALTER SEQUENCE students_student_id_seq RESTART WITH 1");
-            jdbcTemplate.execute("ALTER SEQUENCE groups_group_id_seq RESTART WITH 1");
-            jdbcTemplate.execute("ALTER SEQUENCE courses_course_id_seq RESTART WITH 1");
-        }
-
-        return result;
-    }
-
-    @Override
-    public int addStudentToCourse(int studentId, int courseId) {
-        String sql = """
-                INSERT INTO public.student_courses (student_id, course_id) 
-                VALUES (?,?); 
-                """;
+    @Transactional
+    public boolean addStudentToCourse(String studentId, String courseId) {
+        Student student = em.find(Student.class, studentId);
+        Course course = em.find(Course.class, courseId);
 
         try {
-            return jdbcTemplate.update(sql, studentId, courseId);
-        } catch (DataAccessException e) {
-            System.out.println("Error adding student to course " + e);
-            return 0;
+            course.getStudents().add(student);
+            return true;
+        } catch (PersistenceException e) {
+            return false;
         }
     }
 
     @Override
-    public int removeStudentFromCourse(int studentId, int courseId) {
-        String sql = """
-                DELETE FROM public.student_courses
-                WHERE student_id = ? AND course_id = ?;
-                """;
+    public boolean removeStudentFromCourse(String studentId, String courseId) {
+        Student student = em.find(Student.class, studentId);
+        Course course = em.find(Course.class, courseId);
 
         try {
-            return jdbcTemplate.update(sql, studentId, courseId);
-        } catch (DataAccessException e) {
-            return 0;
+            course.getStudents().remove(student);
+            return true;
+        } catch (PersistenceException e) {
+            return false;
         }
     }
 
     @Override
-    public boolean studentEnrolledOnCourse(int studentId, int courseId) {
-        String sql = """
-                SELECT COUNT(*) FROM public.student_courses
-                WHERE student_courses.student_id = ? AND student_courses.course_id = ?
-                """;
+    public boolean studentEnrolledOnCourse(String studentId, String courseId) {
+        Student student = em.find(Student.class, studentId);
+        Course course = em.find(Course.class, courseId);
 
+        return course.getStudents().contains(student);
+    }
+
+    @Override
+    @Transactional
+    public boolean deleteAll() {
         try {
-            return jdbcTemplate.queryForObject(sql, Integer.class, studentId, courseId) > 0;
-        } catch (DataAccessException e){
+            em.createQuery("SELECT c FROM Course c JOIN c.students s", Course.class)
+                    .getResultList()
+                    .forEach(course -> course.getStudents().clear());
+
+            em.createQuery("SELECT s FROM Student s JOIN s.courses c", Student.class)
+                    .getResultList()
+                    .forEach(student -> student.getCourses().clear());
+
+            em.createQuery("UPDATE Student s SET s.group = null").executeUpdate();
+            em.createQuery("DELETE FROM Group").executeUpdate();
+            em.createQuery("DELETE FROM Student").executeUpdate();
+            em.createQuery("DELETE FROM Course").executeUpdate();
+
+            return true;
+        } catch (Exception e) {
             return false;
         }
     }
