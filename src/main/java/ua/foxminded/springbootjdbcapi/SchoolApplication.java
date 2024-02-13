@@ -164,7 +164,7 @@ public class SchoolApplication implements ApplicationRunner {
         } catch (InputMismatchException e) {
             System.out.println("Invalid input. Please enter the correct value.");
             scanner.next();
-        } catch (IllegalStateException e) {
+        } catch (IllegalStateException | NoSuchElementException e) {
             System.out.println(e.getMessage());
         } catch (Exception e) {
             logger.error("An error occurred while adding a new student: {}", e.getMessage(), e);
@@ -194,7 +194,7 @@ public class SchoolApplication implements ApplicationRunner {
         } catch (InputMismatchException e) {
             System.out.println("Invalid input. Please enter the correct value.");
             scanner.next();
-        } catch (IllegalStateException e) {
+        } catch (IllegalStateException | NoSuchElementException e) {
             System.out.println(e.getMessage());
         } catch (Exception e) {
             logger.error("An error occurred while adding a new student: {}", e.getMessage(), e);
