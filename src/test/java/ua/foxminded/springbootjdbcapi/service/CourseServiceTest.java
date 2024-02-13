@@ -25,39 +25,15 @@ class CourseServiceTest {
     @Autowired
     CourseService courseService;
 
-    @Test
-    void shouldCreateNewCourseWithoutId() {
-        // Arrange
-        Course course = new Course("test", "test");
-        when(courseDao.saveWithoutId(any(Course.class))).thenReturn(1);
-
-        // Act
-        boolean result = courseService.createCourseWithoutId(course);
-
-        // Assert
-        assertTrue(result);
-        verify(courseDao).saveWithoutId(any(Course.class));
-    }
-
-    @Test
-    void shouldThrowIllegalStateException_whenNewCourseWithoutIdWasNotCreated() {
-        // Arrange
-        Course course = new Course("test", "test");
-        when(courseDao.saveWithoutId(course)).thenReturn(0);
-
-        // Act & Assert
-        assertThrows(IllegalStateException.class,
-                () -> courseService.createCourseWithoutId(course));
-    }
+    private final Course course = new Course("1", "test", "test");
 
     @Test
     void createCourse() {
         // Arrange
-        Course course = new Course(1, "test", "test");
-        when(courseDao.save(course)).thenReturn(1);
+        when(courseDao.save(course)).thenReturn(true);
 
         // Act
-        boolean result = courseService.createCourse(course);
+        boolean result = courseService.save(course);
 
         // Assert
         assertTrue(result);
@@ -67,23 +43,22 @@ class CourseServiceTest {
     @Test
     void shouldThrowIllegalStateException_whenNewCourseWasNotCreated() {
         // Arrange
-        Course course = new Course(1, "test", "test");
-        when(courseDao.save(course)).thenReturn(0);
+        when(courseDao.save(course)).thenReturn(false);
 
         // Act & Assert
         assertThrows(IllegalStateException.class,
-                () -> courseService.createCourse(course));
+                () -> courseService.save(course));
     }
 
     @Test
-    void shouldDeleteCourseById() {
+    void shouldRemoveCourseById() {
         // Arrange
-        int id = 1;
+        String id = "1";
         when(courseDao.existsById(id)).thenReturn(true);
-        when(courseDao.deleteById(id)).thenReturn(1);
+        when(courseDao.deleteById(id)).thenReturn(true);
 
         // Act
-        boolean result = courseService.deleteCourseById(id);
+        boolean result = courseService.deleteById(id);
 
         // Assert
         assertTrue(result);
@@ -92,9 +67,9 @@ class CourseServiceTest {
     }
 
     @Test
-    void shouldDeleteAllCourses() {
+    void shouldRemoveAllCourses() {
         // Arrange
-        when(courseDao.deleteAll()).thenReturn(10);
+        when(courseDao.deleteAll()).thenReturn(true);
 
         // Act
         boolean result = courseService.deleteAll();
@@ -107,7 +82,7 @@ class CourseServiceTest {
     @Test
     void shouldThrowIllegalStateException_whenAllCoursesWereNotDeleted() {
         // Arrange
-        when(courseDao.deleteAll()).thenReturn(0);
+        when(courseDao.deleteAll()).thenReturn(false);
 
         // Act
         assertThrows(IllegalStateException.class,
@@ -118,35 +93,34 @@ class CourseServiceTest {
     @Test
     void shouldThrowNoSuchElementException_whenCourseNotExistsByDeleting() {
         // Arrange
-        int id = 1;
+        String id = "1";
         when(courseDao.existsById(id)).thenReturn(false);
 
         // Act & Assert
         assertThrows(NoSuchElementException.class,
-                () -> courseService.deleteCourseById(id));
+                () -> courseService.deleteById(id));
     }
 
     @Test
     void shouldThrowIllegalStateException_whenCourseWasNotDeleted() {
         // Arrange
-        int id = 1;
+        String id = "1";
         when(courseDao.existsById(id)).thenReturn(true);
-        when(courseDao.deleteById(id)).thenReturn(0);
+        when(courseDao.deleteById(id)).thenReturn(false);
 
         // Act & Assert
         assertThrows(IllegalStateException.class,
-                () -> courseService.deleteCourseById(id));
+                () -> courseService.deleteById(id));
     }
 
     @Test
-    void updateCourse() {
+    void modifyCourse() {
         // Arrange
-        Course course = new Course(1, "test", "test");
-        when(courseDao.existsById(course.id())).thenReturn(true);
-        when(courseDao.update(course)).thenReturn(1);
+        when(courseDao.existsById(course.getId())).thenReturn(true);
+        when(courseDao.update(course)).thenReturn(true);
 
         // Act
-        boolean result = courseService.updateCourse(course);
+        boolean result = courseService.update(course);
 
         // Assert
         assertTrue(result);
@@ -156,34 +130,32 @@ class CourseServiceTest {
     @Test
     void shouldThrowNoSuchElementException_whenCourseNotExistsByUpdating() {
         // Arrange
-        Course course = new Course(1, "test", "test");
-        when(courseDao.existsById(course.id())).thenReturn(false);
+        when(courseDao.existsById(course.getId())).thenReturn(false);
 
         // Act & Assert
         assertThrows(NoSuchElementException.class,
-                () -> courseService.updateCourse(course));
+                () -> courseService.update(course));
     }
 
     @Test
     void shouldThrowIllegalStateException_whenCourseWasNotUpdated() {
         // Arrange
-        Course course = new Course(1, "test", "test");
-        when(courseDao.existsById(course.id())).thenReturn(true);
-        when(courseDao.update(course)).thenReturn(0);
+        when(courseDao.existsById(course.getId())).thenReturn(true);
+        when(courseDao.update(course)).thenReturn(false);
 
         // Act & Assert
         assertThrows(IllegalStateException.class,
-                () -> courseService.updateCourse(course));
+                () -> courseService.update(course));
     }
 
     @Test
     void shouldBeTrue_whenCourseExistsById() {
         // Arrange
-        int id = 1;
+        String id = "1";
         when(courseDao.existsById(id)).thenReturn(true);
 
         // Act
-        boolean result = courseService.courseExistsById(id);
+        boolean result = courseService.existsById(id);
 
         // Assert
         assertTrue(result);
@@ -193,11 +165,11 @@ class CourseServiceTest {
     @Test
     void shouldBeFalse_whenCourseDoesNotExistById() {
         // Arrange
-        int id = 1;
+        String id = "1";
         when(courseDao.existsById(id)).thenReturn(false);
 
         // Act
-        boolean result = courseService.courseExistsById(id);
+        boolean result = courseService.existsById(id);
 
         // Assert
         assertFalse(result);
@@ -232,12 +204,12 @@ class CourseServiceTest {
     @Test
     void shouldGetCourseById() {
         // Arrange
-        int id = 1;
-        Course expectedCourse = new Course(1, "test", "test");
+        String id = "1";
+        Course expectedCourse = new Course("1", "test", "test");
         when(courseDao.getById(id)).thenReturn(Optional.of(expectedCourse));
 
         // Act
-        Course actualCourse = courseService.getCourseById(id);
+        Course actualCourse = courseService.getById(id);
 
         // Assert
         assertEquals(expectedCourse, actualCourse);
@@ -247,11 +219,11 @@ class CourseServiceTest {
     @Test
     void shouldThrowNoSuchElementException_whenCourseByIdNotFound() {
         // Arrange
-        int id = 1;
+        String id = "1";
         when(courseDao.getById(id)).thenReturn(Optional.empty());
 
         // Act & Assert
         assertThrows(NoSuchElementException.class,
-                () -> courseService.getCourseById(id));
+                () -> courseService.getById(id));
     }
 }

@@ -1,5 +1,6 @@
 package ua.foxminded.springbootjdbcapi.service;
 
+import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -12,6 +13,7 @@ import java.util.Optional;
 
 @Service
 public class GroupService {
+
     private final GroupDao groupDao;
 
     @Autowired
@@ -19,63 +21,55 @@ public class GroupService {
         this.groupDao = groupDao;
     }
 
-    public boolean createGroupWithoutId(Group group) {
-        int result = groupDao.saveWithoutId(group);
+    @Transactional
+    public boolean save(Group group) {
+        boolean wasCreated = groupDao.save(group);
 
-        if (result <= 0) {
+        if (!wasCreated) {
             throw new IllegalStateException("Group was not created!");
         }
 
         return true;
     }
 
-    public boolean deleteAll(){
-        int result = groupDao.deleteAll();
+    public boolean deleteAll() {
+        boolean wereDeleted = groupDao.deleteAll();
 
-        if(result <= 0){
+        if (!wereDeleted) {
             throw new IllegalStateException("Groups were not deleted");
         }
 
         return true;
     }
 
-    public boolean createGroup(Group group) {
-        int result = groupDao.save(group);
+    public boolean update(Group group) {
+        if (!groupDao.existsById(group.getId())) {
+            throw new NoSuchElementException("Group with ID " + group.getId() + " does not exist.");
+        }
 
-        if (result <= 0) {
-            throw new IllegalStateException("Group was not created!");
+        boolean wasUpdated = groupDao.update(group);
+        if (!wasUpdated) {
+            throw new IllegalStateException("Failed to update group with ID " + group.getId() + ".");
         }
 
         return true;
     }
 
-    public boolean deleteGroupById(int id) {
+
+    public boolean deleteById(String id) {
         if (!groupDao.existsById(id)) {
             throw new NoSuchElementException("Group with ID " + id + " does not exist.");
         }
 
-        int result = groupDao.deleteById(id);
-        if (result <= 0) {
+        boolean wasDeleted = groupDao.deleteById(id);
+        if (!wasDeleted) {
             throw new IllegalStateException("Failed to delete group with ID " + id + ".");
         }
 
         return true;
     }
 
-    public boolean updateGroup(Group group) {
-        if (!groupDao.existsById(group.id())) {
-            throw new NoSuchElementException("Group with ID " + group.id() + " does not exist.");
-        }
-
-        int result = groupDao.update(group);
-        if (result <= 0) {
-            throw new IllegalStateException("Failed to update group with ID " + group.id() + ".");
-        }
-
-        return true;
-    }
-
-    public boolean groupExistsById(int id) {
+    public boolean existsById(String id) {
         return groupDao.existsById(id);
     }
 
@@ -89,7 +83,7 @@ public class GroupService {
         return groups;
     }
 
-    public Group getGroupById(int id) {
+    public Group getById(String id) {
         Optional<Group> group = groupDao.getById(id);
 
         if (group.isEmpty()) {
@@ -105,7 +99,7 @@ public class GroupService {
         }
 
         List<Group> result = groupDao.findAllGroupsWithLessOrEqualStudentsNumber(studentCount);
-        if (result.size() <= 0) {
+        if (result.isEmpty()) {
             throw new NoSuchElementException("There are no such courses with less or equals student count: " + studentCount);
         }
 

@@ -25,39 +25,16 @@ class GroupServiceTest {
     @Autowired
     GroupService groupService;
 
-    @Test
-    void shouldCreateNewGroupWithoutId() {
-        // Arrange
-        Group group = new Group("Math Description");
-        when(groupDao.saveWithoutId(any(Group.class))).thenReturn(1);
-
-        // Act
-        boolean result = groupService.createGroupWithoutId(group);
-
-        // Assert
-        assertTrue(result);
-        verify(groupDao).saveWithoutId(any(Group.class));
-    }
-
-    @Test
-    void shouldThrowIllegalStateExceptionWhenNewGroupWithoutIdWasNotCreated() {
-        // Arrange
-        Group group = new Group("test");
-        when(groupDao.saveWithoutId(group)).thenReturn(0);
-
-        // Act & Assert
-        assertThrows(IllegalStateException.class,
-                () -> groupService.createGroupWithoutId(group));
-    }
+    private final Group group = new Group("1", "test");
 
     @Test
     void shouldCreateGroupSuccessfully() {
         // Arrange
-        Group group = new Group(1, "test");
-        when(groupDao.save(group)).thenReturn(1);
+        Group group = new Group("1", "test");
+        when(groupDao.save(group)).thenReturn(true);
 
         // Act
-        boolean result = groupService.createGroup(group);
+        boolean result = groupService.save(group);
 
         // Assert
         assertTrue(result);
@@ -67,23 +44,23 @@ class GroupServiceTest {
     @Test
     void shouldThrowIllegalStateExceptionWhenNewGroupWasNotCreated() {
         // Arrange
-        Group group = new Group(1, "test");
-        when(groupDao.save(group)).thenReturn(0);
+
+        when(groupDao.save(group)).thenReturn(false);
 
         // Act & Assert
         assertThrows(IllegalStateException.class,
-                () -> groupService.createGroup(group));
+                () -> groupService.save(group));
     }
 
     @Test
     void shouldDeleteGroupByIdSuccessfully() {
         // Arrange
-        int id = 1;
+        String id = "1";
         when(groupDao.existsById(id)).thenReturn(true);
-        when(groupDao.deleteById(id)).thenReturn(1);
+        when(groupDao.deleteById(id)).thenReturn(true);
 
         // Act
-        boolean result = groupService.deleteGroupById(id);
+        boolean result = groupService.deleteById(id);
 
         // Assert
         assertTrue(result);
@@ -94,7 +71,7 @@ class GroupServiceTest {
     @Test
     void shouldDeleteAllGroups() {
         // Arrange
-        when(groupDao.deleteAll()).thenReturn(10);
+        when(groupDao.deleteAll()).thenReturn(true);
 
         // Act
         boolean result = groupService.deleteAll();
@@ -107,7 +84,7 @@ class GroupServiceTest {
     @Test
     void shouldThrowIllegalStateException_whenAllGroupsWereNotDeleted() {
         // Arrange
-        when(groupDao.deleteAll()).thenReturn(0);
+        when(groupDao.deleteAll()).thenReturn(false);
 
         // Act
         assertThrows(IllegalStateException.class,
@@ -118,35 +95,34 @@ class GroupServiceTest {
     @Test
     void shouldThrowNoSuchElementExceptionWhenGroupNotExistsByDeleting() {
         // Arrange
-        int id = 1;
+        String id = "1";
         when(groupDao.existsById(id)).thenReturn(false);
 
         // Act & Assert
         assertThrows(NoSuchElementException.class,
-                () -> groupService.deleteGroupById(id));
+                () -> groupService.deleteById(id));
     }
 
     @Test
     void shouldThrowIllegalStateExceptionWhenGroupWasNotDeleted() {
         // Arrange
-        int id = 1;
+        String id = "1";
         when(groupDao.existsById(id)).thenReturn(true);
-        when(groupDao.deleteById(id)).thenReturn(0);
+        when(groupDao.deleteById(id)).thenReturn(false);
 
         // Act & Assert
         assertThrows(IllegalStateException.class,
-                () -> groupService.deleteGroupById(id));
+                () -> groupService.deleteById(id));
     }
 
     @Test
     void shouldUpdateGroupSuccessfully() {
         // Arrange
-        Group group = new Group(1, "test");
-        when(groupDao.existsById(group.id())).thenReturn(true);
-        when(groupDao.update(group)).thenReturn(1);
+        when(groupDao.existsById(group.getId())).thenReturn(true);
+        when(groupDao.update(group)).thenReturn(true);
 
         // Act
-        boolean result = groupService.updateGroup(group);
+        boolean result = groupService.update(group);
 
         // Assert
         assertTrue(result);
@@ -156,34 +132,32 @@ class GroupServiceTest {
     @Test
     void shouldThrowNoSuchElementExceptionWhenGroupNotExistsByUpdating() {
         // Arrange
-        Group group = new Group(1, "test");
-        when(groupDao.existsById(group.id())).thenReturn(false);
+        when(groupDao.existsById(group.getId())).thenReturn(false);
 
         // Act & Assert
         assertThrows(NoSuchElementException.class,
-                () -> groupService.updateGroup(group));
+                () -> groupService.update(group));
     }
 
     @Test
     void shouldThrowIllegalStateExceptionWhenGroupWasNotUpdated() {
         // Arrange
-        Group group = new Group(1, "test");
-        when(groupDao.existsById(group.id())).thenReturn(true);
-        when(groupDao.update(group)).thenReturn(0);
+        when(groupDao.existsById(group.getId())).thenReturn(true);
+        when(groupDao.update(group)).thenReturn(false);
 
         // Act & Assert
         assertThrows(IllegalStateException.class,
-                () -> groupService.updateGroup(group));
+                () -> groupService.update(group));
     }
 
     @Test
     void shouldBeTrueWhenGroupExistsById() {
         // Arrange
-        int id = 1;
+        String id = "1";
         when(groupDao.existsById(id)).thenReturn(true);
 
         // Act
-        boolean result = groupService.groupExistsById(id);
+        boolean result = groupService.existsById(id);
 
         // Assert
         assertTrue(result);
@@ -193,11 +167,11 @@ class GroupServiceTest {
     @Test
     void shouldBeFalseWhenGroupDoesNotExistById() {
         // Arrange
-        int id = 1;
+        String id = "1";
         when(groupDao.existsById(id)).thenReturn(false);
 
         // Act
-        boolean result = groupService.groupExistsById(id);
+        boolean result = groupService.existsById(id);
 
         // Assert
         assertFalse(result);
@@ -207,7 +181,7 @@ class GroupServiceTest {
     @Test
     void shouldGetAllGroupsSuccessfully() {
         // Arrange
-        List<Group> expected = new ArrayList<>(List.of(new Group(1, "test")));
+        List<Group> expected = new ArrayList<>(List.of(new Group("1", "test")));
         when(groupDao.getAll()).thenReturn(expected);
 
         // Act
@@ -232,12 +206,12 @@ class GroupServiceTest {
     @Test
     void shouldGetGroupByIdSuccessfully() {
         // Arrange
-        int id = 1;
+        String id = "1";
         Optional<Group> expected = Optional.of(new Group("test"));
         when(groupDao.getById(id)).thenReturn(expected);
 
         // Act
-        Group actual = groupService.getGroupById(id);
+        Group actual = groupService.getById(id);
 
         // Assert
         assertEquals(expected.get(), actual);
@@ -247,20 +221,21 @@ class GroupServiceTest {
     @Test
     void shouldThrowNoSuchElementExceptionWhenGroupByIdNotFound() {
         // Arrange
-        int id = 1;
+        String id = "1";
         Optional<Group> expected = Optional.empty();
         when(groupDao.getById(id)).thenReturn(expected);
 
         // Act & Assert
         assertThrows(NoSuchElementException.class,
-                () -> groupService.getGroupById(id));
+                () -> groupService.getById(id));
     }
+
 
     @Test
     void shouldFindAllGroupsWithLessOrEqualsStudentCountSuccessfully() {
         // Arrange
         int studentCount = 1;
-        List<Group> expected = new ArrayList<>(List.of(new Group(1, "test")));
+        List<Group> expected = new ArrayList<>(List.of(new Group("1", "test")));
         when(groupDao.findAllGroupsWithLessOrEqualStudentsNumber(studentCount)).thenReturn(expected);
 
         // Act

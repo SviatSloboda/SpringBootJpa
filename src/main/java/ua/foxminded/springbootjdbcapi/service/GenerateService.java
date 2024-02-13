@@ -11,9 +11,9 @@ import ua.foxminded.springbootjdbcapi.model.Group;
 import ua.foxminded.springbootjdbcapi.model.Student;
 
 import java.util.HashSet;
+import java.util.List;
 import java.util.Random;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 @Service
 public class GenerateService {
@@ -53,18 +53,15 @@ public class GenerateService {
     }
 
     public void deleteAll(){
-        groupDao.deleteAll();
         studentCourses.deleteAll();
-        studentDao.deleteAll();
-        courseDao.deleteAll();
     }
 
     public void generateGroups() {
         for (int i = 0; i < 10; i++) {
             String groupName = generateRandomName();
-            int result = groupDao.saveWithoutId(new Group(groupName));
+            boolean wasSaved = groupDao.save(new Group(groupName));
 
-            if (result <= 0) {
+            if (!wasSaved) {
                 throw new IllegalStateException("Group with name: " + groupName + " was not created");
             }
         }
@@ -75,9 +72,9 @@ public class GenerateService {
                 "English", "Art", "Computer Science", "Economics", "Music"};
 
         for (String i : courses) {
-            int result = courseDao.saveWithoutId(new Course(i, i + "Basics"));
+            boolean wasSaved = courseDao.save(new Course(i, i + "Basics"));
 
-            if (result <= 0) {
+            if (!wasSaved) {
                 throw new IllegalStateException("Course with name: " + i + "was not created");
             }
         }
@@ -97,30 +94,37 @@ public class GenerateService {
         for (int i = 0; i < 200; i++) {
             String firstName = firstNames[random.nextInt(firstNames.length)];
             String lastName = lastNames[random.nextInt(lastNames.length)];
-            int groupId = random.nextInt(10) + 1;
 
-            int result = studentDao.saveWithoutId(new Student(groupId, firstName, lastName));
-            if (result <= 0) {
+            List<String> groupIds = groupDao.getAllIds();
+
+            String groupId = groupIds.get(random.nextInt(groupIds.size()));
+
+            Group group = groupDao.getById(groupId).orElseThrow(() -> new IllegalStateException("Error adding Group for Student"));
+
+            boolean wasSaved = studentDao.save(new Student(group, firstName, lastName));
+            if (!wasSaved) {
                 throw new IllegalStateException("Student:" + firstName + " " + lastName + " was not created. Current value is: " +i);
             }
         }
     }
 
     public void assignStudentsToCourses() {
-        for (int studentId = 1; studentId <= 200; studentId++) {
-            Set<Integer> assignedCourses = new HashSet<>();
+        List<String> studentIds = studentDao.getAllIds();
+        List<String> courseIds = courseDao.getAllIds();
+
+        for (String studentId : studentIds) {
+            Set<String> assignedCourses = new HashSet<>();
             int coursesCount = random.nextInt(3) + 1;
 
             for (int i = 0; i < coursesCount; i++) {
-                int courseId;
-
+                String courseId;
                 do {
-                    courseId = random.nextInt(10) + 1;
+                    courseId = courseIds.get(random.nextInt(courseIds.size()));
                 } while (assignedCourses.contains(courseId));
                 assignedCourses.add(courseId);
 
-                int result = studentCourses.addStudentToCourse(studentId, courseId);
-                if (result <= 0) {
+                boolean wasAdded = studentCourses.addStudentToCourse(studentId, courseId);
+                if (!wasAdded) {
                     throw new IllegalStateException("Student with ID: " + studentId +
                                                     " was not added to course with Id" + courseId);
                 }

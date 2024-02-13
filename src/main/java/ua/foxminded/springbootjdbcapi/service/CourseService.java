@@ -18,63 +18,53 @@ public class CourseService {
         this.courseDao = courseDao;
     }
 
-    public boolean createCourseWithoutId(Course course) {
-        int result = courseDao.saveWithoutId(course);
-
-        if (result <= 0) {
-            throw new IllegalStateException("Course was not created!");
-        }
-
-        return true;
-    }
-
     public boolean deleteAll() {
-        int result = courseDao.deleteAll();
+        boolean wereDeleted = courseDao.deleteAll();
 
-        if (result <= 0) {
+        if (!wereDeleted) {
             throw new IllegalStateException("Courses were not deleted");
         }
 
         return true;
     }
 
-    public boolean createCourse(Course course) {
-        int result = courseDao.save(course);
+    public boolean save(Course course) {
+        boolean wasCreated = courseDao.save(course);
 
-        if (result <= 0) {
+        if (!wasCreated) {
             throw new IllegalStateException("Course was not created!");
         }
 
         return true;
     }
 
-    public boolean deleteCourseById(int id) {
+    public boolean deleteById(String id) {
         if (!courseDao.existsById(id)) {
             throw new NoSuchElementException("Course with ID " + id + " does not exist.");
         }
 
-        int result = courseDao.deleteById(id);
-        if (result <= 0) {
+        boolean wasDeleted = courseDao.deleteById(id);
+        if (!wasDeleted) {
             throw new IllegalStateException("Failed to delete course with ID " + id + ".");
         }
 
         return true;
     }
 
-    public boolean updateCourse(Course course) {
-        if (!courseDao.existsById(course.id())) {
-            throw new NoSuchElementException("Course with ID " + course.id() + " does not exist.");
+    public boolean update(Course course) {
+        if (!courseDao.existsById(course.getId())) {
+            throw new NoSuchElementException("Course with ID " + course.getId() + " does not exist.");
         }
 
-        int result = courseDao.update(course);
-        if (result <= 0) {
-            throw new IllegalStateException("Failed to update course with ID " + course.id() + ".");
+        boolean wasUpdated = courseDao.update(course);
+        if (!wasUpdated) {
+            throw new IllegalStateException("Failed to update course with ID " + course.getId() + ".");
         }
 
         return true;
     }
 
-    public boolean courseExistsById(int id) {
+    public boolean existsById(String id) {
         return courseDao.existsById(id);
     }
 
@@ -88,7 +78,7 @@ public class CourseService {
         return courses;
     }
 
-    public Course getCourseById(int id) {
+    public Course getById(String id) {
         Optional<Course> course = courseDao.getById(id);
 
         if (course.isEmpty()) {

@@ -5,15 +5,18 @@ import org.slf4j.LoggerFactory;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.stereotype.Component;
+
 import ua.foxminded.springbootjdbcapi.model.Group;
 import ua.foxminded.springbootjdbcapi.model.Student;
-import ua.foxminded.springbootjdbcapi.service.GenerateService;
 import ua.foxminded.springbootjdbcapi.service.GroupService;
 import ua.foxminded.springbootjdbcapi.service.SchoolService;
 import ua.foxminded.springbootjdbcapi.service.StudentService;
 
-import java.util.InputMismatchException;
 import java.util.List;
+
+import ua.foxminded.springbootjdbcapi.service.GenerateService;
+
+import java.util.InputMismatchException;
 import java.util.NoSuchElementException;
 import java.util.Scanner;
 
@@ -25,7 +28,7 @@ public class SchoolApplication implements ApplicationRunner {
     private final GroupService groupService;
     private final SchoolService schoolService;
 
-    public SchoolApplication(GenerateService generateService, SchoolService schoolService, StudentService studentService, GroupService groupService) {
+    public SchoolApplication(GroupService groupService, StudentService studentService, SchoolService schoolService, GenerateService generateService) {
         this.generateService = generateService;
         this.studentService = studentService;
         this.groupService = groupService;
@@ -45,6 +48,7 @@ public class SchoolApplication implements ApplicationRunner {
                 running = processUserChoice(scanner);
             }
         }
+
     }
 
     private void setupInitialData() {
@@ -56,15 +60,19 @@ public class SchoolApplication implements ApplicationRunner {
     }
 
     private void showMenu() {
-        System.out.println("\nMenu:\n" +
-                           "1. Find all the groups with less or equal student count\n" +
-                           "2. Find all the students related to the course with the given name\n" +
-                           "3. Add a new student\n" +
-                           "4. Delete a student\n" +
-                           "5. Add a student to course\n" +
-                           "6. Remove student from course\n" +
-                           "7. Find student by ID\n" +
-                           "8. Exit");
+        System.out.println(
+                """
+                        Menu:
+                        1. Find all the groups with less or equal student count
+                        2. Find all the students related to the course with the given name
+                        3. Add a new student
+                        4. Delete a student
+                        5. Add a student to course
+                        6. Remove student from course
+                        7. Find student by ID
+                        8. Add a new student with own id
+                        9. Exit
+                        """);
         System.out.print("Enter choice: ");
     }
 
@@ -74,12 +82,15 @@ public class SchoolApplication implements ApplicationRunner {
             switch (choice) {
                 case 1 -> handleFindGroups(scanner);
                 case 2 -> handleFindStudents(scanner);
-                case 3 -> handleAddStudent(scanner);
+                case 3 -> handleSaveStudent(scanner);
                 case 4 -> handleDeleteStudent(scanner);
                 case 5 -> handleAddStudentToCourse(scanner);
                 case 6 -> handleRemoveStudentFromCourse(scanner);
                 case 7 -> handleFindStudentById(scanner);
-                case 8 -> { return false; }
+                case 8 -> handleSaveStudentWithOwnId(scanner);
+                case 9 -> {
+                    return false;
+                }
                 default -> logger.warn("Invalid choice. Please enter 1-8.");
             }
         } catch (Exception e) {
@@ -92,10 +103,10 @@ public class SchoolApplication implements ApplicationRunner {
     private void handleAddStudentToCourse(Scanner scanner) {
         try {
             System.out.println("Enter the ID of the student: ");
-            int studentId = scanner.nextInt();
+            String studentId = scanner.next();
 
             System.out.println("Enter the ID of the course: ");
-            int courseId = scanner.nextInt();
+            String courseId = scanner.next();
 
             boolean added = schoolService.addStudentToCourse(studentId, courseId);
             if (added) {
@@ -114,10 +125,10 @@ public class SchoolApplication implements ApplicationRunner {
     private void handleRemoveStudentFromCourse(Scanner scanner) {
         try {
             System.out.println("Enter the ID of the student: ");
-            int studentId = scanner.nextInt();
+            String studentId = scanner.next();
 
             System.out.println("Enter the ID of the course: ");
-            int courseId = scanner.nextInt();
+            String courseId = scanner.next();
 
             boolean removed = schoolService.removeStudentFromCourse(studentId, courseId);
             if (removed) {
@@ -133,7 +144,7 @@ public class SchoolApplication implements ApplicationRunner {
         }
     }
 
-    private void handleAddStudent(Scanner scanner) {
+    private void handleSaveStudent(Scanner scanner) {
         try {
             System.out.println("Enter the first name of the student: ");
             String firstName = scanner.next();
@@ -142,10 +153,10 @@ public class SchoolApplication implements ApplicationRunner {
             String lastName = scanner.next();
 
             System.out.println("Enter the ID of the student's group: ");
-            int groupId = scanner.nextInt();
+            String groupId = scanner.next();
 
-            Student student = new Student(groupId, firstName, lastName);
-            boolean created = studentService.createStudentWithoutId(student);
+            Student student = new Student(groupService.getById(groupId), firstName, lastName);
+            boolean created = studentService.save(student);
 
             if (created) {
                 System.out.println("Student " + firstName + " " + lastName + " has been successfully added.");
@@ -153,7 +164,37 @@ public class SchoolApplication implements ApplicationRunner {
         } catch (InputMismatchException e) {
             System.out.println("Invalid input. Please enter the correct value.");
             scanner.next();
-        } catch (IllegalStateException e) {
+        } catch (IllegalStateException | NoSuchElementException e) {
+            System.out.println(e.getMessage());
+        } catch (Exception e) {
+            logger.error("An error occurred while adding a new student: {}", e.getMessage(), e);
+        }
+    }
+
+    private void handleSaveStudentWithOwnId(Scanner scanner) {
+        try {
+            System.out.println("Enter the id of the student: ");
+            String id = scanner.next();
+
+            System.out.println("Enter the first name of the student: ");
+            String firstName = scanner.next();
+
+            System.out.println("Enter the last name of the student: ");
+            String lastName = scanner.next();
+
+            System.out.println("Enter the ID of the student's group: ");
+            String groupId = scanner.next();
+
+            Student student = new Student(id, groupService.getById(groupId), firstName, lastName);
+            boolean created = studentService.save(student);
+
+            if (created) {
+                System.out.println("Student " + firstName + " " + lastName + " has been successfully added.");
+            }
+        } catch (InputMismatchException e) {
+            System.out.println("Invalid input. Please enter the correct value.");
+            scanner.next();
+        } catch (IllegalStateException | NoSuchElementException e) {
             System.out.println(e.getMessage());
         } catch (Exception e) {
             logger.error("An error occurred while adding a new student: {}", e.getMessage(), e);
@@ -163,9 +204,9 @@ public class SchoolApplication implements ApplicationRunner {
     private void handleDeleteStudent(Scanner scanner) {
         try {
             System.out.println("Enter the ID of the student to delete: ");
-            int studentId = scanner.nextInt();
+            String studentId = scanner.next();
 
-            boolean deleted = studentService.deleteStudentById(studentId);
+            boolean deleted = studentService.deleteById(studentId);
             if (deleted) {
                 System.out.println("Student with ID " + studentId + " has been successfully deleted.");
             }
@@ -230,9 +271,9 @@ public class SchoolApplication implements ApplicationRunner {
     private void handleFindStudentById(Scanner scanner) {
         try {
             System.out.println("Enter the ID of the student: ");
-            int studentId = scanner.nextInt();
+            String studentId = scanner.next();
 
-            Student student = studentService.getStudentById(studentId);
+            Student student = studentService.getById(studentId);
 
             System.out.println("Student found: " + student.toString());
         } catch (InputMismatchException e) {

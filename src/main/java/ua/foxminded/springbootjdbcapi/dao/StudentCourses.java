@@ -1,11 +1,10 @@
 package ua.foxminded.springbootjdbcapi.dao;
 
 public interface StudentCourses {
-    int addStudentToCourse(int studentId, int courseId);
+    boolean addStudentToCourse(String studentId, String courseId);
 
-    int removeStudentFromCourse(int studentId, int courseId);
+    boolean removeStudentFromCourse(String studentId, String courseId);
 
-    boolean studentEnrolledOnCourse(int studentId, int courseId);
-
-    int deleteAll();
+    boolean studentEnrolledOnCourse(String studentId, String courseId);
+    boolean deleteAll();
 }
