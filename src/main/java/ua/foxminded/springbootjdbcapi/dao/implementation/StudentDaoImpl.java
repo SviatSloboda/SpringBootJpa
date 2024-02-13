@@ -21,13 +21,15 @@ public class StudentDaoImpl implements StudentDao {
     @Transactional
     public boolean deleteById(String id) {
         Student student = em.find(Student.class, id);
+        if (student == null) return false;
 
-        if(student == null) return false;
+        student.getCourses().forEach(course -> course.getStudents().remove(student));
+        em.flush();
 
         em.remove(student);
-
-        return em.find(Student.class, id) == null;
+        return true;
     }
+
 
     @Override
     @Transactional
