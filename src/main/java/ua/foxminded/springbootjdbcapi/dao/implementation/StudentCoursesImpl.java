@@ -1,76 +1,79 @@
 package ua.foxminded.springbootjdbcapi.dao.implementation;
 
-import jakarta.persistence.EntityManager;
-import jakarta.persistence.PersistenceContext;
-import jakarta.persistence.PersistenceException;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 import ua.foxminded.springbootjdbcapi.dao.StudentCourses;
 import ua.foxminded.springbootjdbcapi.model.Course;
 import ua.foxminded.springbootjdbcapi.model.Student;
+import ua.foxminded.springbootjdbcapi.repository.CourseRepository;
+import ua.foxminded.springbootjdbcapi.repository.StudentRepository;
+
+import java.util.Optional;
 
 @Repository
 @RequiredArgsConstructor
 public class StudentCoursesImpl implements StudentCourses {
-    @PersistenceContext
-    private EntityManager em;
+
+    private final StudentRepository studentRepository;
+    private final CourseRepository courseRepository;
 
     @Override
     @Transactional
     public boolean addStudentToCourse(String studentId, String courseId) {
-        Student student = em.find(Student.class, studentId);
-        Course course = em.find(Course.class, courseId);
+        Optional<Student> studentOptional = studentRepository.findById(studentId);
+        Optional<Course> courseOptional = courseRepository.findById(courseId);
 
-        try {
-            course.getStudents().add(student);
-            return true;
-        } catch (PersistenceException e) {
+        if (studentOptional.isEmpty() || courseOptional.isEmpty()) {
             return false;
         }
+
+        Course course = courseOptional.get();
+        Student student = studentOptional.get();
+
+        course.getStudents().add(student);
+        student.getCourses().add(course);
+
+        return true;
     }
 
     @Override
+    @Transactional
     public boolean removeStudentFromCourse(String studentId, String courseId) {
-        Student student = em.find(Student.class, studentId);
-        Course course = em.find(Course.class, courseId);
+        Optional<Student> studentOptional = studentRepository.findById(studentId);
+        Optional<Course> courseOptional = courseRepository.findById(courseId);
 
-        try {
-            course.getStudents().remove(student);
-            return true;
-        } catch (PersistenceException e) {
+        if (courseOptional.isEmpty() || studentOptional.isEmpty()) {
             return false;
         }
+
+        Course course = courseOptional.get();
+        Student student = studentOptional.get();
+
+        course.getStudents().remove(student);
+        student.getCourses().remove(course);
+
+        return true;
     }
+
+
 
     @Override
     public boolean studentEnrolledOnCourse(String studentId, String courseId) {
-        Student student = em.find(Student.class, studentId);
-        Course course = em.find(Course.class, courseId);
+        Optional<Student> student = studentRepository.findById(studentId);
+        Optional<Course> course = courseRepository.findById(courseId);
 
-        return course.getStudents().contains(student);
+        if(student.isEmpty() || course.isEmpty()) return false;
+
+        return  course.get().getStudents().contains(student.get());
     }
 
     @Override
     @Transactional
     public boolean deleteAll() {
-        try {
-            em.createQuery("SELECT c FROM Course c JOIN c.students s", Course.class)
-                    .getResultList()
-                    .forEach(course -> course.getStudents().clear());
+        studentRepository.deleteAll();
+        courseRepository.deleteAll();
 
-            em.createQuery("SELECT s FROM Student s JOIN s.courses c", Student.class)
-                    .getResultList()
-                    .forEach(student -> student.getCourses().clear());
-
-            em.createQuery("UPDATE Student s SET s.group = null").executeUpdate();
-            em.createQuery("DELETE FROM Group").executeUpdate();
-            em.createQuery("DELETE FROM Student").executeUpdate();
-            em.createQuery("DELETE FROM Course").executeUpdate();
-
-            return true;
-        } catch (Exception e) {
-            return false;
-        }
+        return true;
     }
 }

@@ -1,105 +1,97 @@
 package ua.foxminded.springbootjdbcapi.dao.implementation;
 
-import jakarta.persistence.EntityManager;
-import jakarta.persistence.PersistenceContext;
-import jakarta.persistence.PersistenceException;
-import jakarta.persistence.TypedQuery;
 import jakarta.transaction.Transactional;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 import ua.foxminded.springbootjdbcapi.dao.StudentDao;
+import ua.foxminded.springbootjdbcapi.model.Course;
 import ua.foxminded.springbootjdbcapi.model.Student;
+import ua.foxminded.springbootjdbcapi.repository.StudentRepository;
 
 import java.util.List;
 import java.util.Optional;
 
 @Repository
+@RequiredArgsConstructor
 public class StudentDaoImpl implements StudentDao {
-    @PersistenceContext
-    private EntityManager em;
+
+    private final StudentRepository studentRepository;
 
     @Override
     @Transactional
     public boolean deleteById(String id) {
-        Student student = em.find(Student.class, id);
-        if (student == null) return false;
+        Optional<Student> optionalStudent = studentRepository.findById(id);
 
-        student.getCourses().forEach(course -> course.getStudents().remove(student));
-        em.flush();
+        if (optionalStudent.isPresent()) {
+            Student student = optionalStudent.get();
 
-        em.remove(student);
-        return true;
+            for (Course course : student.getCourses()) {
+                course.getStudents().remove(student);
+            }
+
+            studentRepository.deleteById(id);
+
+            return !studentRepository.existsById(id);
+        } else {
+            return false;
+        }
     }
-
 
     @Override
     @Transactional
     public boolean update(Student object) {
-        if(em.find(Student.class, object.getId()) == null) return false;
+        if(!studentRepository.existsById(object.getId())) return false;
 
-        try {
-            em.merge(object);
-            return true;
-        } catch (PersistenceException e){
-            return false;
-        }
+
+        studentRepository.save(object);
+
+        return studentRepository.existsById(object.getId());
     }
 
     @Override
     @Transactional
     public boolean deleteAll() {
-        try {
-            em.createQuery("DELETE FROM Student").executeUpdate();
-            return true;
-        } catch (PersistenceException e){
-            return false;
-        }
+        studentRepository.deleteAll();
+
+        return studentRepository.findAll().isEmpty();
     }
 
     @Override
     public List<Student> getAll() {
-        TypedQuery<Student> query = em.createQuery("SELECT s from Student s", Student.class);
-        return query.getResultList();
+        return studentRepository.findAll();
     }
 
     @Override
     public Optional<Student> getById(String id) {
-        return Optional.ofNullable(em.find(Student.class, id));
+        return studentRepository.findById(id);
     }
 
     @Override
     @Transactional
     public boolean save(Student object) {
-        try {
-            em.persist(object);
-            return true;
-        } catch (PersistenceException e){
-            return false;
-        }
+        studentRepository.save(object);
+
+        return studentRepository.existsById(object.getId());
     }
 
     @Override
     public boolean existsById(String id) {
-        return em.find(Student.class, id) != null;
+        return studentRepository.existsById(id);
     }
 
     @Override
     public List<String> getAllIds() {
-        TypedQuery<String> query = em.createQuery("SELECT s.id FROM Student s", String.class);
-        return query.getResultList();
+        return studentRepository.findAll().stream().map(Student::getId).toList();
     }
 
     @Override
     @Transactional
     public List<Student> findAllStudentsByCourseName(String courseName) {
-        String jpql = """
-                SELECT s FROM Student s
-                INNER JOIN s.courses c
-                WHERE c.name LIKE :courseName
-                """;
-
-        TypedQuery<Student> query = em.createQuery(jpql, Student.class);
-        query.setParameter("courseName", courseName);
-        return query.getResultList();
+        return studentRepository.findAll().stream()
+                .filter(student -> student.getCourses()
+                        .stream().map(Course::getName).toList()
+                        .contains(courseName))
+                .toList();
     }
 }
 

@@ -99,6 +99,7 @@ class StudentCoursesImplTest {
 
         // Then
         List<Student> studentsInMathCourse = studentDao.findAllStudentsByCourseName("Math");
+
         boolean studentExistsInCourse = studentsInMathCourse.stream()
                 .anyMatch(student -> student.getId().equals(studentId));
 

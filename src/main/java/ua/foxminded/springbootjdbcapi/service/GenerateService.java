@@ -31,6 +31,12 @@ public class GenerateService {
         this.groupDao = groupDao;
     }
 
+    public void deleteAll(){
+        studentCourses.deleteAll();
+        groupDao.deleteAll();
+    }
+
+
     private static String generateRandomName() {
         String characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
         String numbers = "0123456789";
@@ -50,10 +56,6 @@ public class GenerateService {
         }
 
         return nameBuilder.toString();
-    }
-
-    public void deleteAll(){
-        studentCourses.deleteAll();
     }
 
     public void generateGroups() {

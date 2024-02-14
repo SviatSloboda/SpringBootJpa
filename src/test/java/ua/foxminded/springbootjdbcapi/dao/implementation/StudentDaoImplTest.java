@@ -129,7 +129,7 @@ class StudentDaoImplTest {
     @Test
     void save_GivenNewStudent_WhenSaved_ThenRetrieveThisStudent() {
         // Given
-        Student exampleStudent = new Student("444", new Group("2", "test"), "test", "test");
+        Student exampleStudent = new Student("444", new Group("2", "Group B"), "test", "test");
         studentDao.save(exampleStudent);
 
         // When

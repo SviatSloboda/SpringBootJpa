@@ -1,84 +1,86 @@
 package ua.foxminded.springbootjdbcapi.dao.implementation;
 
-import jakarta.persistence.EntityManager;
-import jakarta.persistence.PersistenceContext;
-import jakarta.persistence.PersistenceException;
-import jakarta.persistence.TypedQuery;
 import jakarta.transaction.Transactional;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 import ua.foxminded.springbootjdbcapi.dao.CourseDao;
 import ua.foxminded.springbootjdbcapi.model.Course;
+import ua.foxminded.springbootjdbcapi.model.Student;
+import ua.foxminded.springbootjdbcapi.repository.CourseRepository;
 
 import java.util.List;
 import java.util.Optional;
 
 @Repository
+@RequiredArgsConstructor
 public class CourseDaoImpl implements CourseDao {
-    @PersistenceContext
-    private EntityManager em;
+
+    private final CourseRepository courseRepository;
 
     @Override
     @Transactional
     public boolean deleteById(String id) {
-        Course courseToDelete = em.find(Course.class, id);
-        em.remove(courseToDelete);
+        Optional<Course> optionalCourse = courseRepository.findById(id);
 
-        return em.find(Course.class, id) == null;
+        if (optionalCourse.isPresent()) {
+            Course course = optionalCourse.get();
+
+            for (Student student : course.getStudents()) {
+                course.getStudents().remove(student);
+            }
+
+            courseRepository.deleteById(id);
+
+            return !courseRepository.existsById(id);
+        } else {
+            return false;
+        }
     }
 
     @Override
     @Transactional
     public boolean update(Course object) {
-        try {
-            em.merge(object);
-            return true;
-        } catch (PersistenceException e) {
-            return false;
-        }
+        if(!courseRepository.existsById(object.getId())) return false;
+
+        courseRepository.save(object);
+
+        return courseRepository.existsById(object.getId());
     }
 
     @Override
     @Transactional
     public boolean deleteAll() {
-        try {
-            em.createQuery("DELETE FROM Course").executeUpdate();
-            return true;
-        } catch (PersistenceException e) {
-            return false;
-        }
+        courseRepository.deleteAll();
+
+        return courseRepository.findAll().isEmpty();
     }
 
     @Override
     public List<Course> getAll() {
-        TypedQuery<Course> query = em.createQuery("SELECT c FROM Course c", Course.class);
-        return query.getResultList();
+        return courseRepository.findAll();
     }
 
     @Override
     public Optional<Course> getById(String id) {
-        return Optional.ofNullable(em.find(Course.class, id));
+        return courseRepository.findById(id);
     }
 
     @Override
     @Transactional
     public boolean save(Course object) {
-        try {
-            em.persist(object);
-            return true;
-        } catch (PersistenceException e) {
-            return false;
-        }
+        courseRepository.save(object);
+
+        return courseRepository.existsById(object.getId());
     }
 
     @Override
     public boolean existsById(String id) {
-        return em.find(Course.class, id) != null;
+        return courseRepository.existsById(id);
     }
 
     @Override
     public List<String> getAllIds() {
-        TypedQuery<String> query = em.createQuery("SELECT c.id FROM Course c", String.class);
-        return query.getResultList();
+        return courseRepository.findAll().stream().map(Course::getId).toList();
     }
 }
 
