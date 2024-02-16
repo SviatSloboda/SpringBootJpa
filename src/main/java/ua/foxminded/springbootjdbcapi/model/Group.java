@@ -30,14 +30,6 @@ public class Group {
     @OneToMany(mappedBy = "group")
     private List<Student> students;
 
-    @Override
-    public String toString() {
-        return "Group{" +
-               "id='" + id + '\'' +
-               ", groupName='" + groupName + '\'' +
-               '}';
-    }
-
     public Group(String id, String groupName) {
         this.id = id;
         this.groupName = groupName;
@@ -58,5 +50,13 @@ public class Group {
     @Override
     public int hashCode() {
         return Objects.hash(id, groupName);
+    }
+
+    @Override
+    public String toString() {
+        return "Group{" +
+               "id='" + id + '\'' +
+               ", groupName='" + groupName + '\'' +
+               '}';
     }
 }

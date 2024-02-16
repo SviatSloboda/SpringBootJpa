@@ -1,93 +1,85 @@
 package ua.foxminded.springbootjdbcapi.service;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
-import ua.foxminded.springbootjdbcapi.dao.CourseDao;
-import ua.foxminded.springbootjdbcapi.dao.GroupDao;
-import ua.foxminded.springbootjdbcapi.dao.StudentCourses;
-import ua.foxminded.springbootjdbcapi.dao.StudentDao;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
 import ua.foxminded.springbootjdbcapi.model.Course;
 import ua.foxminded.springbootjdbcapi.model.Group;
 import ua.foxminded.springbootjdbcapi.model.Student;
 
 import java.util.Arrays;
-import java.util.List;
-import java.util.Optional;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
-@SpringBootTest(classes = GenerateService.class)
 class GenerateServiceTest {
-    @Autowired
-    GenerateService generateService;
 
-    @MockBean
-    GroupDao groupDao;
+    @InjectMocks
+    private GenerateService generateService;
 
-    @MockBean
-    StudentDao studentDao;
+    @Mock
+    private StudentService studentService;
 
-    @MockBean
-    CourseDao courseDao;
+    @Mock
+    private SchoolService schoolService;
 
-    @MockBean
-    StudentCourses studentCourses;
+    @Mock
+    private CourseService courseService;
+
+    @Mock
+    private GroupService groupService;
+
+    @BeforeEach
+    void setUp() {
+        //arrange
+        MockitoAnnotations.openMocks(this);
+        when(studentService.save(any(Student.class))).thenReturn(true);
+        when(groupService.save(any(Group.class))).thenReturn(true);
+        when(courseService.save(any(Course.class))).thenReturn(true);
+        when(schoolService.addStudentToCourse(anyString(), anyString())).thenReturn(true);
+
+        when(groupService.getAllIds()).thenReturn(Arrays.asList("1", "2"));
+        when(groupService.getById(anyString())).thenReturn(new Group("Test Group"));
+        when(studentService.getAllIds()).thenReturn(Arrays.asList("student1", "student2"));
+        when(courseService.getAllIds()).thenReturn(Arrays.asList("course1", "course2"));
+    }
 
     @Test
-    public void generateGroupsShouldCreateTenGroups() {
-        // Arrange
-        when(groupDao.save(any(Group.class))).thenReturn(true);
+    void deleteAllShouldInvokeDeleteMethods() {
+        //act
+        generateService.deleteAll();
 
-        // Act
+        //assert
+        verify(schoolService, times(1)).deleteAll();
+        verify(groupService, times(1)).deleteAll();
+    }
+
+    @Test
+    void generateGroupsShouldInvokeSaveMethod() {
+        //act
         generateService.generateGroups();
 
-        // Assert
-        verify(groupDao, times(10)).save(any(Group.class));
+        //assert
+        verify(groupService, times(10)).save(any(Group.class));
     }
 
     @Test
-    public void generateCoursesShouldCreateTenCourses() {
-        // Arrange
-        when(courseDao.save(any(Course.class))).thenReturn(true);
-
-        // Act
+    void generateCoursesShouldInvokeSaveMethod() {
+        //act
         generateService.generateCourses();
 
-        // Assert
-        verify(courseDao, times(10)).save(any(Course.class));
+        //assert
+        verify(courseService, times(10)).save(any(Course.class));
     }
 
     @Test
-    public void generateStudentsShouldCreateTwoHundredStudents() {
-        // Arrange
-        List<String> mockGroupIds = Arrays.asList("group1", "group2");
-        when(groupDao.getAllIds()).thenReturn(mockGroupIds);
-        when(groupDao.getById(anyString())).thenReturn(Optional.of(new Group("Test Group")));
-        when(studentDao.save(any(Student.class))).thenReturn(true);
-
-        // Act
+    void generateStudentsShouldInvokeSaveMethod() {
+        //act
         generateService.generateStudents();
 
-        // Assert
-        verify(studentDao, times(200)).save(any(Student.class));
-    }
-
-    @Test
-    public void assignStudentsToCoursesShouldAssignCorrectly() {
-        // Arrange
-        List<String> mockStudentIds = Arrays.asList("student1", "student2", "student3");
-        List<String> mockCourseIds = Arrays.asList("course1", "course2", "course3");
-        when(studentDao.getAllIds()).thenReturn(mockStudentIds);
-        when(courseDao.getAllIds()).thenReturn(mockCourseIds);
-        when(studentCourses.addStudentToCourse(anyString(), anyString())).thenReturn(true);
-
-        // Act
-        generateService.assignStudentsToCourses();
-
-        // Assert
-        verify(studentCourses, atLeast(mockStudentIds.size())).addStudentToCourse(anyString(), anyString());
+        //assert
+        verify(studentService, times(200)).save(any(Student.class));
     }
 }

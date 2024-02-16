@@ -1,4 +1,4 @@
-package ua.foxminded.springbootjdbcapi.dao.implementation;
+package ua.foxminded.springbootjdbcapi.service;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -10,17 +10,17 @@ import org.springframework.test.context.jdbc.Sql;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
-import ua.foxminded.springbootjdbcapi.dao.CourseDao;
+import ua.foxminded.springbootjdbcapi.service.CourseService;
 import ua.foxminded.springbootjdbcapi.model.Course;
 
 import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.Optional;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 @DataJpaTest(includeFilters = @ComponentScan.Filter(type = FilterType.ASSIGNABLE_TYPE, classes = {
-        CourseDao.class
+        CourseService.class
 }))
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @Sql(
@@ -28,10 +28,10 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
         executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD
 )
 @Testcontainers
-class CourseDaoImplTest {
+class CourseServiceImplTest {
 
     @Autowired
-    private CourseDao courseDao;
+    private CourseService courseService;
 
     @Container
     private static final PostgreSQLContainer<?> postgresContainer = new PostgreSQLContainer<>("postgres:latest")
@@ -43,17 +43,17 @@ class CourseDaoImplTest {
     void deleteById_GivenId1_WhenDeleted_ThenCourseIsRemoved() {
         // Given
         // When
-        courseDao.deleteById("1");
+        courseService.deleteById("1");
 
         // Then
-        assertEquals(Optional.empty(), courseDao.getById("1"));
+        assertThrows(NoSuchElementException.class, () -> courseService.getById("1"), "There is no such course with ID: 1");
     }
 
     @Test
     void deleteById_GivenId1_WhenDeleted_ThenRowsAffectedIs1() {
         // Given
         // When
-        boolean wasDeleted = courseDao.deleteById("1");
+        boolean wasDeleted = courseService.deleteById("1");
 
         // Then
         assertTrue(wasDeleted);
@@ -65,11 +65,11 @@ class CourseDaoImplTest {
         Course newCourse = new Course("1", "test", "test");
 
         // When
-        courseDao.update(newCourse);
+        courseService.update(newCourse);
 
         // Then
-        assertEquals(newCourse.getName(), courseDao.getById("1").get().getName());
-        assertEquals(newCourse.getDescription(), courseDao.getById("1").get().getDescription());
+        assertEquals(newCourse.getName(), courseService.getById("1").getName());
+        assertEquals(newCourse.getDescription(), courseService.getById("1").getDescription());
     }
 
     @Test
@@ -78,7 +78,7 @@ class CourseDaoImplTest {
         Course newCourse = new Course("1", "test", "test");
 
         // When
-        boolean wasSaved = courseDao.update(newCourse);
+        boolean wasSaved = courseService.update(newCourse);
 
         // Then
         assertTrue(wasSaved);
@@ -92,7 +92,7 @@ class CourseDaoImplTest {
         );
 
         // When
-        List<String> actual = courseDao.getAll().stream()
+        List<String> actual = courseService.getAllCourses().stream()
                 .map(Course::getName)
                 .toList();
 
@@ -104,10 +104,10 @@ class CourseDaoImplTest {
     void fetchById_GivenNewlyCreatedCourse_WhenFetched_ThenReturnNewCourse() {
         // Given
         Course expected = new Course("33", "test", "test");
-        courseDao.save(expected);
+        courseService.save(expected);
 
         // When
-        Course actual = courseDao.getById("33").get();
+        Course actual = courseService.getById("33");
 
         // Then
         assertEquals(expected, actual);
@@ -119,7 +119,7 @@ class CourseDaoImplTest {
         Course expected = new Course("1", "Math", "Intro to math");
 
         // When
-        Course actual = courseDao.getById("1").get();
+        Course actual = courseService.getById("1");
 
         // Then
         assertEquals(expected, actual);
@@ -131,10 +131,10 @@ class CourseDaoImplTest {
         Course newCourse = new Course("101", "test", "test");
 
         // When
-        courseDao.save(newCourse);
+        courseService.save(newCourse);
 
         // Then
-        assertEquals(newCourse, courseDao.getById("101").get());
+        assertEquals(newCourse, courseService.getById("101"));
     }
 
     @Test
@@ -143,9 +143,58 @@ class CourseDaoImplTest {
         Course newCourse = new Course("101", "test", "test");
 
         // When
-        boolean wasSaved = courseDao.save(newCourse);
+        boolean wasSaved = courseService.save(newCourse);
 
         // Then
         assertTrue(wasSaved);
     }
+
+    @Test
+    void existsById_GivenExistingId_WhenChecked_ThenReturnsTrue() {
+        // Given
+        String existingId = "1";
+
+        // When
+        boolean exists = courseService.existsById(existingId);
+
+        // Then
+        assertTrue(exists);
+    }
+
+    @Test
+    void existsById_GivenNonExistingId_WhenChecked_ThenReturnsFalse() {
+        // Given
+        String nonExistingId = "999";
+
+        // When
+        boolean exists = courseService.existsById(nonExistingId);
+
+        // Then
+        assertFalse(exists);
+    }
+
+    @Test
+    void deleteAll_WhenCalled_ThenAllCoursesAreRemoved() {
+        // Given
+
+        // When
+        courseService.deleteAll();
+        assertThrows(NoSuchElementException.class, () -> courseService.getAllCourses(), "No courses were found");
+    }
+
+    @Test
+    void getAllIds_WhenCalled_ThenReturnsListOfAllIds() {
+        // Given
+        List<String> expectedIds = List.of("1", "2", "3");
+
+        // When
+        List<String> actualIds = courseService.getAllIds();
+
+        // Then
+        assertNotNull(actualIds);
+        assertFalse(actualIds.isEmpty());
+        assertEquals(expectedIds.size(), actualIds.size());
+        assertTrue(actualIds.containsAll(expectedIds));
+    }
+
 }
