@@ -1,4 +1,4 @@
-package ua.foxminded.springbootjdbcapi.dao.implementation;
+package ua.foxminded.springbootjdbcapi.service;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -10,8 +10,8 @@ import org.springframework.test.context.jdbc.Sql;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
-import ua.foxminded.springbootjdbcapi.dao.StudentCourses;
-import ua.foxminded.springbootjdbcapi.dao.StudentDao;
+import ua.foxminded.springbootjdbcapi.service.SchoolService;
+import ua.foxminded.springbootjdbcapi.service.StudentService;
 import ua.foxminded.springbootjdbcapi.model.Student;
 
 import java.util.List;
@@ -23,7 +23,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 
 
 @DataJpaTest(includeFilters = @ComponentScan.Filter(type = FilterType.ASSIGNABLE_TYPE, classes = {
-        StudentCourses.class, StudentDao.class
+        SchoolService.class, StudentService.class
 }))
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @Sql(
@@ -31,13 +31,13 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
         executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD
 )
 @Testcontainers
-class StudentCoursesImplTest {
+class SchoolServiceImplTest {
 
     @Autowired
-    private StudentCourses studentCourses;
+    private SchoolService schoolService;
 
     @Autowired
-    StudentDao studentDao;
+    StudentService studentDao;
 
     @Container
     private static final PostgreSQLContainer<?> postgresContainer = new PostgreSQLContainer<>("postgres:latest")
@@ -53,7 +53,7 @@ class StudentCoursesImplTest {
         String courseId = "1";
 
         // When
-        boolean wasAdded = studentCourses.addStudentToCourse(studentId, courseId);
+        boolean wasAdded = schoolService.addStudentToCourse(studentId, courseId);
 
         // Then
         assertTrue(wasAdded);
@@ -64,7 +64,7 @@ class StudentCoursesImplTest {
         // Given
         String studentId = "4";
         String courseId = "1";
-        studentCourses.addStudentToCourse(studentId, courseId);
+        schoolService.addStudentToCourse(studentId, courseId);
 
         // When
         Student actual = studentDao.findAllStudentsByCourseName("Math").stream()
@@ -72,7 +72,7 @@ class StudentCoursesImplTest {
                 .findFirst().orElseThrow(() -> new NoSuchElementException("No student found"));
 
         // Then
-        assertEquals(studentDao.getById(studentId).get(), actual);
+        assertEquals(studentDao.getById(studentId), actual);
     }
 
     @Test
@@ -82,7 +82,7 @@ class StudentCoursesImplTest {
         String courseId = "1";
 
         // When
-        boolean wasRemoved = studentCourses.removeStudentFromCourse(studentId, courseId);
+        boolean wasRemoved = schoolService.removeStudentFromCourse(studentId, courseId);
 
         // Then
         assertTrue(wasRemoved);
@@ -95,10 +95,11 @@ class StudentCoursesImplTest {
         String courseId = "1";
 
         // When
-        boolean wasRemoved = studentCourses.removeStudentFromCourse(studentId, courseId);
+        boolean wasRemoved = schoolService.removeStudentFromCourse(studentId, courseId);
 
         // Then
         List<Student> studentsInMathCourse = studentDao.findAllStudentsByCourseName("Math");
+
         boolean studentExistsInCourse = studentsInMathCourse.stream()
                 .anyMatch(student -> student.getId().equals(studentId));
 
@@ -107,3 +108,4 @@ class StudentCoursesImplTest {
     }
 
 }
+

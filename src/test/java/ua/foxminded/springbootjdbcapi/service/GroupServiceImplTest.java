@@ -1,4 +1,4 @@
-package ua.foxminded.springbootjdbcapi.dao.implementation;
+package ua.foxminded.springbootjdbcapi.service;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -9,27 +9,26 @@ import org.springframework.context.annotation.FilterType;
 import org.springframework.test.context.jdbc.Sql;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
-import ua.foxminded.springbootjdbcapi.dao.GroupDao;
+import ua.foxminded.springbootjdbcapi.service.GroupService;
 import ua.foxminded.springbootjdbcapi.model.Group;
 
 import java.util.List;
-import java.util.Optional;
+import java.util.NoSuchElementException;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 @DataJpaTest(includeFilters = @ComponentScan.Filter(type = FilterType.ASSIGNABLE_TYPE, classes = {
-        GroupDao.class
+        GroupService.class
 }))
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @Sql(
         scripts = {"/sql/drop_tables.sql", "/sql/create_tables.sql", "/sql/insert_data.sql"},
         executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD
 )
-class GroupDaoImplTest {
+class GroupServiceImplTest {
 
     @Autowired
-    private GroupDao groupDao;
+    private GroupService groupService;
 
     @Container
     private static final PostgreSQLContainer<?> postgresContainer = new PostgreSQLContainer<>("postgres:latest")
@@ -41,7 +40,7 @@ class GroupDaoImplTest {
     void removeById_GivenId2_WhenDeleted_ThenRowsAffectedIs1() {
         // Given
         // When
-        boolean wasDeleted = groupDao.deleteById("2");
+        boolean wasDeleted = groupService.deleteById("2");
 
         // Then
         assertTrue(wasDeleted);
@@ -52,10 +51,10 @@ class GroupDaoImplTest {
     void removeById_GivenId1_WhenDeleted_ThenGroupIsRemoved() {
         // Given
         // When
-        groupDao.deleteById("1");
+        groupService.deleteById("1");
 
         // Then
-        assertEquals(Optional.empty(), groupDao.getById("1"));
+        assertThrows(NoSuchElementException.class, () ->  groupService.getById("1"), "There is no such group with ID: 1");
     }
 
     @Test
@@ -64,7 +63,7 @@ class GroupDaoImplTest {
         List<String> expected = List.of("Group A", "Group B");
 
         // When
-        List<String> actual = groupDao.getAll().stream()
+        List<String> actual = groupService.getAllGroups().stream()
                 .map(Group::getGroupName)
                 .toList();
 
@@ -76,10 +75,10 @@ class GroupDaoImplTest {
     void retrieveById_GivenNewlyCreatedGroup_WhenFetched_ThenReturnNewGroup() {
         // Given
         Group group = new Group("33", "test");
-        groupDao.save(group);
+        groupService.save(group);
 
         // When
-        Group actual = groupDao.getById("33").get();
+        Group actual = groupService.getById("33");
 
         // Then
         assertEquals(group, actual);
@@ -87,12 +86,8 @@ class GroupDaoImplTest {
 
     @Test
     void retrieveById_GivenNonExistingId_WhenFetched_ThenReturnOptionalEmpty() {
-        // Given
-        // When
-        Optional<Group> result = groupDao.getById("323");
-
-        // Then
-        assertEquals(Optional.empty(), result);
+        // When & Then
+        assertThrows(NoSuchElementException.class, () -> groupService.getById("323"), "There is no such group with ID: 323");
     }
 
     @Test
@@ -101,10 +96,10 @@ class GroupDaoImplTest {
         Group group = new Group("1", "test");
 
         // When
-        groupDao.update(group);
+        groupService.update(group);
 
         // Then
-        assertEquals(group, groupDao.getById("1").get());
+        assertEquals(group, groupService.getById("1"));
     }
 
     @Test
@@ -113,7 +108,7 @@ class GroupDaoImplTest {
         Group group = new Group("1", "test");
 
         // When
-        boolean wasUpdated = groupDao.update(group);
+        boolean wasUpdated = groupService.update(group);
 
         // Then
         assertTrue(wasUpdated);
@@ -125,10 +120,10 @@ class GroupDaoImplTest {
         Group group = new Group("332", "test");
 
         // When
-        groupDao.save(group);
+        groupService.save(group);
 
         // Then
-        assertEquals(group, groupDao.getById("332").get());
+        assertEquals(group, groupService.getById("332"));
     }
 
     @Test
@@ -137,7 +132,7 @@ class GroupDaoImplTest {
         Group group = new Group("332", "test");
 
         // When
-        boolean wasSaved = groupDao.save(group);
+        boolean wasSaved = groupService.save(group);
 
         // Then
         assertTrue(wasSaved);
@@ -149,9 +144,67 @@ class GroupDaoImplTest {
         List<Group> expected = List.of(new Group("2", "Group B"));
 
         // When
-        List<Group> actual = groupDao.findAllGroupsWithLessOrEqualStudentsNumber(2);
+        List<Group> actual = groupService.findAllGroupsWithLessOrEqualsStudentCount(2);
 
         // Then
         assertEquals(expected, actual);
     }
+
+    @Test
+    void existsById_GivenExistingId_WhenChecked_ThenReturnsTrue() {
+        // Given
+        String existingId = "1";
+
+        // When
+        boolean exists = groupService.existsById(existingId);
+
+        // Then
+        assertTrue(exists);
+    }
+
+    @Test
+    void existsById_GivenNonExistingId_WhenChecked_ThenReturnsFalse() {
+        // Given
+        String nonExistingId = "999";
+
+        // When
+        boolean exists = groupService.existsById(nonExistingId);
+
+        // Then
+        assertFalse(exists);
+    }
+
+    @Test
+    void deleteAll_WhenCalled_ThenAllGroupsAreRemoved() {
+        // Given
+
+        // When
+        groupService.deleteAll();
+
+        // Then
+        assertThrows(NoSuchElementException.class, () -> groupService.getAllGroups() ,"No groups were found");
+    }
+
+    @Test
+    void getAllIds_WhenCalled_ThenReturnsListOfAllIds() {
+        // Given
+
+        // When
+        List<String> actualIds = groupService.getAllIds();
+
+        // Then
+        assertNotNull(actualIds);
+        assertFalse(actualIds.isEmpty());
+    }
+
+    @Test
+    void findAllGroupsWithLessOrEqualsStudentCount_GivenNoGroupsMatch_WhenSearched_ThenReturnEmptyList() {
+        // Given
+        int studentCount = 0;
+
+        // When
+        // Then
+        assertThrows(NoSuchElementException.class,() -> groupService.findAllGroupsWithLessOrEqualsStudentCount(studentCount),"There are no such groups with less or equals student count: " + studentCount);
+    }
+
 }

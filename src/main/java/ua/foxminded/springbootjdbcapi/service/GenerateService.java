@@ -2,10 +2,6 @@ package ua.foxminded.springbootjdbcapi.service;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import ua.foxminded.springbootjdbcapi.dao.CourseDao;
-import ua.foxminded.springbootjdbcapi.dao.GroupDao;
-import ua.foxminded.springbootjdbcapi.dao.StudentCourses;
-import ua.foxminded.springbootjdbcapi.dao.StudentDao;
 import ua.foxminded.springbootjdbcapi.model.Course;
 import ua.foxminded.springbootjdbcapi.model.Group;
 import ua.foxminded.springbootjdbcapi.model.Student;
@@ -18,18 +14,24 @@ import java.util.Set;
 @Service
 public class GenerateService {
     private final static Random random = new Random();
-    private final StudentDao studentDao;
-    private final StudentCourses studentCourses;
-    private final CourseDao courseDao;
-    private final GroupDao groupDao;
+    private final StudentService studentService;
+    private final SchoolService schoolService;
+    private final CourseService courseService;
+    private final GroupService groupService;
 
     @Autowired
-    public GenerateService(StudentDao studentDao, StudentCourses studentCourses, CourseDao courseDao, GroupDao groupDao) {
-        this.studentDao = studentDao;
-        this.studentCourses = studentCourses;
-        this.courseDao = courseDao;
-        this.groupDao = groupDao;
+    public GenerateService(StudentService studentService, SchoolService schoolService, CourseService courseService, GroupService groupService) {
+        this.studentService = studentService;
+        this.schoolService = schoolService;
+        this.courseService = courseService;
+        this.groupService = groupService;
     }
+
+    public void deleteAll(){
+        schoolService.deleteAll();
+        groupService.deleteAll();
+    }
+
 
     private static String generateRandomName() {
         String characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
@@ -52,14 +54,10 @@ public class GenerateService {
         return nameBuilder.toString();
     }
 
-    public void deleteAll(){
-        studentCourses.deleteAll();
-    }
-
     public void generateGroups() {
         for (int i = 0; i < 10; i++) {
             String groupName = generateRandomName();
-            boolean wasSaved = groupDao.save(new Group(groupName));
+            boolean wasSaved = groupService.save(new Group(groupName));
 
             if (!wasSaved) {
                 throw new IllegalStateException("Group with name: " + groupName + " was not created");
@@ -72,7 +70,7 @@ public class GenerateService {
                 "English", "Art", "Computer Science", "Economics", "Music"};
 
         for (String i : courses) {
-            boolean wasSaved = courseDao.save(new Course(i, i + "Basics"));
+            boolean wasSaved = courseService.save(new Course(i, i + "Basics"));
 
             if (!wasSaved) {
                 throw new IllegalStateException("Course with name: " + i + "was not created");
@@ -95,13 +93,13 @@ public class GenerateService {
             String firstName = firstNames[random.nextInt(firstNames.length)];
             String lastName = lastNames[random.nextInt(lastNames.length)];
 
-            List<String> groupIds = groupDao.getAllIds();
+            List<String> groupIds = groupService.getAllIds();
 
             String groupId = groupIds.get(random.nextInt(groupIds.size()));
 
-            Group group = groupDao.getById(groupId).orElseThrow(() -> new IllegalStateException("Error adding Group for Student"));
+            Group group = groupService.getById(groupId);
 
-            boolean wasSaved = studentDao.save(new Student(group, firstName, lastName));
+            boolean wasSaved = studentService.save(new Student(group, firstName, lastName));
             if (!wasSaved) {
                 throw new IllegalStateException("Student:" + firstName + " " + lastName + " was not created. Current value is: " +i);
             }
@@ -109,8 +107,8 @@ public class GenerateService {
     }
 
     public void assignStudentsToCourses() {
-        List<String> studentIds = studentDao.getAllIds();
-        List<String> courseIds = courseDao.getAllIds();
+        List<String> studentIds = studentService.getAllIds();
+        List<String> courseIds = courseService.getAllIds();
 
         for (String studentId : studentIds) {
             Set<String> assignedCourses = new HashSet<>();
@@ -123,7 +121,7 @@ public class GenerateService {
                 } while (assignedCourses.contains(courseId));
                 assignedCourses.add(courseId);
 
-                boolean wasAdded = studentCourses.addStudentToCourse(studentId, courseId);
+                boolean wasAdded = schoolService.addStudentToCourse(studentId, courseId);
                 if (!wasAdded) {
                     throw new IllegalStateException("Student with ID: " + studentId +
                                                     " was not added to course with Id" + courseId);

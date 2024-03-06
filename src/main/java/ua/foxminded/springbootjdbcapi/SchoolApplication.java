@@ -48,7 +48,6 @@ public class SchoolApplication implements ApplicationRunner {
                 running = processUserChoice(scanner);
             }
         }
-
     }
 
     private void setupInitialData() {
@@ -93,7 +92,8 @@ public class SchoolApplication implements ApplicationRunner {
                 }
                 default -> logger.warn("Invalid choice. Please enter 1-8.");
             }
-        } catch (Exception e) {
+        }
+        catch (Exception e) {
             logger.error("Error processing choice: {}", e.getMessage(), e);
             scanner.nextLine();
         }
@@ -186,7 +186,7 @@ public class SchoolApplication implements ApplicationRunner {
             String groupId = scanner.next();
 
             Student student = new Student(id, groupService.getById(groupId), firstName, lastName);
-            boolean created = studentService.save(student);
+            boolean created = studentService.saveStudentWithOwnId(student);
 
             if (created) {
                 System.out.println("Student " + firstName + " " + lastName + " has been successfully added.");

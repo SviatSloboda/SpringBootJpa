@@ -1,5 +1,6 @@
 package ua.foxminded.springbootjdbcapi.model;
 
+import jakarta.annotation.Nullable;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
@@ -50,16 +51,6 @@ public class Student {
     }
 
     @Override
-    public String toString() {
-        return "Student{" +
-               "id='" + id + '\'' +
-               ", group=" + group +
-               ", firstName='" + firstName + '\'' +
-               ", lastName='" + lastName + '\'' +
-               '}';
-    }
-
-    @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
@@ -70,5 +61,15 @@ public class Student {
     @Override
     public int hashCode() {
         return Objects.hash(id, group, firstName, lastName);
+    }
+
+    @Override
+    public String toString() {
+        return "Student{" +
+               "id='" + id + '\'' +
+               ", group=" + group +
+               ", firstName='" + firstName + '\'' +
+               ", lastName='" + lastName + '\'' +
+               '}';
     }
 }

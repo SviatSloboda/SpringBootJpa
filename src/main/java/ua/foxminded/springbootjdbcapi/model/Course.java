@@ -53,15 +53,6 @@ public class Course {
     }
 
     @Override
-    public String toString() {
-        return "Course{" +
-               "id='" + id + '\'' +
-               ", name='" + name + '\'' +
-               ", description='" + description + '\'' +
-               '}';
-    }
-
-    @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
@@ -72,5 +63,14 @@ public class Course {
     @Override
     public int hashCode() {
         return Objects.hash(id, name, description);
+    }
+
+    @Override
+    public String toString() {
+        return "Course{" +
+               "id='" + id + '\'' +
+               ", name='" + name + '\'' +
+               ", description='" + description + '\'' +
+               '}';
     }
 }
